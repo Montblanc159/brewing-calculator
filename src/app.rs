@@ -3,6 +3,7 @@ use egui::*;
 use serde::*;
 
 const DEFAULT_SPACING: f32 = 8.0;
+const ERROR_COLOR: Color32 = Color32::from_rgb(255, 70, 70);
 
 #[derive(Deserialize, Serialize, Default)]
 struct Fermentecible {
@@ -11,6 +12,8 @@ struct Fermentecible {
     humidity: f32,
     ebc: u8,
     ratio: u8,
+    weight: f32,
+    mcu: f32,
 }
 
 #[derive(Deserialize, Serialize, Default)]
@@ -40,9 +43,15 @@ pub struct BrewingCalcApp {
     final_gravity: f32,
     efficiency: u8,
     batch_size: u16,
+    mash_water_ratio: f32,
+    evaporation_rate: f32,
     hops: Vec<Hop>,
     fermentecibles: Vec<Fermentecible>,
     ferments: Vec<Ferment>,
+    mash_water_vol: f32,
+    post_mash_water_vol: f32,
+    sparge_water_vol: f32,
+    pre_ebullition_water_vol: f32,
 }
 
 impl Default for BrewingCalcApp {
@@ -56,10 +65,16 @@ impl Default for BrewingCalcApp {
             original_gravity: 12.0,
             final_gravity: 2.0,
             efficiency: 80,
+            mash_water_ratio: 3.0,
+            evaporation_rate: 10.0,
             batch_size: 20,
             hops: vec![],
             fermentecibles: vec![],
             ferments: vec![],
+            mash_water_vol: 0.0,
+            post_mash_water_vol: 0.0,
+            pre_ebullition_water_vol: 0.0,
+            sparge_water_vol: 0.0,
         }
     }
 }
@@ -160,15 +175,7 @@ impl App for BrewingCalcApp {
 
             ui.add_space(DEFAULT_SPACING);
 
-            ui.horizontal(|ui| {
-                ui.label("Densité finale (°P): ");
-                if ui
-                    .add(Slider::new(&mut self.final_gravity, 0.0..=25.0))
-                    .changed()
-                {
-                    self.abv = compute_abv(self.original_gravity, self.final_gravity);
-                };
-            });
+            ui.label(format!("Densité finale (°P): {}", self.final_gravity));
 
             ui.add_space(DEFAULT_SPACING);
 
@@ -176,6 +183,41 @@ impl App for BrewingCalcApp {
                 ui.label("Efficacité (%): ");
                 ui.add(Slider::new(&mut self.efficiency, 0..=100));
             });
+
+            ui.add_space(DEFAULT_SPACING);
+
+            ui.horizontal(|ui| {
+                ui.label("Ratio d'eau à l'empâtage (L/kg): ");
+                ui.add(Slider::new(&mut self.mash_water_ratio, 0.0..=10.0));
+            });
+
+            ui.add_space(DEFAULT_SPACING);
+
+            ui.horizontal(|ui| {
+                ui.label("Taux d'évaporation (%): ");
+                ui.add(Slider::new(&mut self.evaporation_rate, 0.0..=10.0));
+            });
+
+            ui.add_space(DEFAULT_SPACING);
+
+            ui.label(format!(
+                "Volume d'eau à l'empatage (L): {}",
+                self.mash_water_vol
+            ));
+
+            ui.add_space(DEFAULT_SPACING);
+
+            ui.label(format!(
+                "Volume d'eau de rinçage (L): {}",
+                self.sparge_water_vol
+            ));
+
+            ui.add_space(DEFAULT_SPACING);
+
+            ui.label(format!(
+                "Volume d'eau pré-ébullition (L): {}",
+                self.pre_ebullition_water_vol
+            ));
 
             ui.add_space(DEFAULT_SPACING);
 
@@ -191,7 +233,11 @@ impl App for BrewingCalcApp {
                 if ui.button("+").clicked() {
                     self.ferments.push(Ferment {
                         ..Default::default()
-                    })
+                    });
+                };
+
+                if ui.button("-").clicked() {
+                    self.ferments.pop();
                 };
             });
 
@@ -200,6 +246,17 @@ impl App for BrewingCalcApp {
             for index in 0..self.ferments.len() {
                 ferment_ui(ui, &mut self.ferments, index);
             }
+
+            // This is an arbitrary choice to handle cofermentations, has to be enhanced
+            let max_attenuation = self
+                .ferments
+                .iter()
+                .map(|ferment| ferment.attenuation)
+                .max()
+                .unwrap_or(0);
+
+            self.final_gravity =
+                compute_final_gravity(self.original_gravity, max_attenuation as f32);
 
             ui.add_space(DEFAULT_SPACING);
 
@@ -210,25 +267,63 @@ impl App for BrewingCalcApp {
                         ..Default::default()
                     })
                 };
+
+                if ui.button("-").clicked() {
+                    self.fermentecibles.pop();
+                };
             });
 
             ui.add_space(DEFAULT_SPACING);
 
+            let mut weights = vec![];
+            let mut mcus = vec![];
             let mut ratios = vec![];
             for fermentecible in &self.fermentecibles {
-                ratios.push(fermentecible.ratio)
+                ratios.push(fermentecible.ratio);
+                weights.push(fermentecible.weight);
+                mcus.push(fermentecible.mcu);
             }
+
+            self.ebc = compute_ebc(mcus.iter().sum());
 
             if self.fermentecibles.len() > 0 && check_fermentecible_ratio(ratios) {
                 ui.colored_label(
-                    Color32::from_rgb(255, 70, 70),
+                    ERROR_COLOR,
                     "Problème de ratios : leur somme doit être égal à 100",
                 );
                 ui.add_space(DEFAULT_SPACING);
             }
 
+            self.mash_water_vol =
+                compute_mash_water_vol(weights.iter().sum(), self.mash_water_ratio);
+
+            self.post_mash_water_vol =
+                compute_post_mash_water_vol(self.mash_water_vol, weights.iter().sum());
+
+            self.sparge_water_vol = compute_sparge_water_vol(
+                self.batch_size,
+                self.evaporation_rate,
+                self.post_mash_water_vol,
+            );
+
+            self.pre_ebullition_water_vol =
+                compute_pre_ebullition_water_vol(self.sparge_water_vol, self.post_mash_water_vol);
+
             for index in 0..self.fermentecibles.len() {
                 fermentecible_ui(ui, &mut self.fermentecibles, index);
+
+                self.fermentecibles[index].weight = compute_grain_bill(
+                    compute_total_extract(self.original_gravity),
+                    self.efficiency,
+                    self.batch_size,
+                    &self.fermentecibles[index],
+                );
+
+                self.fermentecibles[index].mcu = compute_mcu(
+                    self.fermentecibles[index].ebc,
+                    self.fermentecibles[index].weight,
+                    self.batch_size,
+                );
             }
 
             ui.add_space(DEFAULT_SPACING);
@@ -239,6 +334,10 @@ impl App for BrewingCalcApp {
                     self.hops.push(Hop {
                         ..Default::default()
                     })
+                };
+
+                if ui.button("-").clicked() {
+                    self.hops.pop();
                 };
             });
 
@@ -280,9 +379,6 @@ fn ferment_ui(ui: &mut Ui, ferments: &mut Vec<Ferment>, index: usize) {
         ui.add(Slider::new(&mut ferment.attenuation, 0..=100));
         ui.label("Taux d'ensemencement (g/L)");
         ui.add(Slider::new(&mut ferment.pitch_rate, 0.0..=30.0));
-        if ui.button("Supprimer").clicked() {
-            ferments.remove(index);
-        }
     });
     ui.add_space(DEFAULT_SPACING);
 }
@@ -296,13 +392,11 @@ fn fermentecible_ui(ui: &mut Ui, fermentecibles: &mut Vec<Fermentecible>, index:
         ui.add(Slider::new(&mut fermentecible.extract, 0.0..=100.0));
         ui.label("Humidité (g/L)");
         ui.add(Slider::new(&mut fermentecible.humidity, 0.0..=100.0));
-        ui.label("EBC (g/L)");
+        ui.label("EBC");
         ui.add(Slider::new(&mut fermentecible.ebc, 0..=150));
         ui.label("Ratio (%)");
         ui.add(Slider::new(&mut fermentecible.ratio, 0..=100));
-        if ui.button("Supprimer").clicked() {
-            fermentecibles.remove(index);
-        }
+        ui.label(format!("Poid : {} g", fermentecible.weight));
     });
     ui.add_space(DEFAULT_SPACING);
 }
@@ -327,4 +421,71 @@ fn compute_abv(og: f32, fg: f32) -> f32 {
 
 fn check_fermentecible_ratio(ratios: Vec<u8>) -> bool {
     ratios.iter().sum::<u8>() != 100
+}
+
+// g/L
+fn compute_total_extract(og: f32) -> f32 {
+    (0.9974 / ((1.0 / og) - 0.00382) + 0.01) * 10.0
+}
+
+fn compute_grain_bill(
+    total_extract: f32,
+    efficiency: u8,
+    batch_size: u16,
+    fermentecible: &Fermentecible,
+) -> f32 {
+    let f_extract =
+        (total_extract * (fermentecible.ratio as f32 / 100.0)) / (efficiency as f32 / 100.0);
+
+    (f_extract / (fermentecible.extract / 100.0)) / (1.0 - (fermentecible.humidity / 100.0))
+        * batch_size as f32
+}
+
+fn compute_final_gravity(og: f32, attenuation: f32) -> f32 {
+    og - og * (attenuation / 100.0)
+}
+
+fn compute_mash_water_vol(grain_weight: f32, water_ratio: f32) -> f32 {
+    grain_weight / 1000.0 * water_ratio
+}
+
+fn compute_post_mash_water_vol(mash_water_vol: f32, grain_weight: f32) -> f32 {
+    mash_water_vol - ((grain_weight / 1000.0) * 0.8)
+}
+
+fn compute_sparge_water_vol(
+    batch_size: u16,
+    evaporation_rate: f32,
+    post_mash_water_vol: f32,
+) -> f32 {
+    (batch_size as f32 + (batch_size as f32 * (evaporation_rate as f32 / 100.0)))
+        - post_mash_water_vol
+}
+
+fn compute_pre_ebullition_water_vol(sparge_water_vol: f32, post_mash_water_vol: f32) -> f32 {
+    sparge_water_vol + post_mash_water_vol
+}
+
+fn compute_cell_count(og: f32, batch_size: u16) -> f32 {
+    1_000_000.0 * (batch_size as f32 * 1000.0) * og
+}
+
+fn compute_mcu(ebc: u8, grain_weight: f32, batch_size: u16) -> f32 {
+    (4.23 * (ebc as f32 * (grain_weight / 100.0))) / batch_size as f32
+}
+
+fn compute_ebc(total_mcu: f32) -> u8 {
+    (2.939 + total_mcu.powf(0.6859)) as u8
+}
+
+fn compute_bugu(ibu: u8, og: f32) {
+    ibu as f32 / convert_plato_to_sg(og);
+}
+
+fn convert_plato_to_sg(plato: f32) -> f32 {
+    1.0 + (plato / (258.6 - ((plato / 258.2) * 227.1)))
+}
+
+fn convert_sg_to_plato(sg: f32) -> f32 {
+    (-1.0 * 616.868) + (1111.14 * sg) - (630.272 * sg.powf(2.0)) + (135.997 * sg.powf(3.0))
 }
