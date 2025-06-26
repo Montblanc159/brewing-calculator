@@ -275,6 +275,23 @@ impl App for BrewingCalcApp {
 
             ui.add_space(DEFAULT_SPACING);
 
+            for index in 0..self.fermentecibles.len() {
+                fermentecible_ui(ui, &mut self.fermentecibles, index);
+
+                self.fermentecibles[index].weight = compute_grain_bill(
+                    compute_total_extract(self.original_gravity),
+                    self.efficiency,
+                    self.batch_size,
+                    &self.fermentecibles[index],
+                );
+
+                self.fermentecibles[index].mcu = compute_mcu(
+                    self.fermentecibles[index].ebc,
+                    self.fermentecibles[index].weight,
+                    self.batch_size,
+                );
+            }
+
             let mut weights = vec![];
             let mut mcus = vec![];
             let mut ratios = vec![];
@@ -308,23 +325,6 @@ impl App for BrewingCalcApp {
 
             self.pre_ebullition_water_vol =
                 compute_pre_ebullition_water_vol(self.sparge_water_vol, self.post_mash_water_vol);
-
-            for index in 0..self.fermentecibles.len() {
-                fermentecible_ui(ui, &mut self.fermentecibles, index);
-
-                self.fermentecibles[index].weight = compute_grain_bill(
-                    compute_total_extract(self.original_gravity),
-                    self.efficiency,
-                    self.batch_size,
-                    &self.fermentecibles[index],
-                );
-
-                self.fermentecibles[index].mcu = compute_mcu(
-                    self.fermentecibles[index].ebc,
-                    self.fermentecibles[index].weight,
-                    self.batch_size,
-                );
-            }
 
             ui.add_space(DEFAULT_SPACING);
 
@@ -471,11 +471,11 @@ fn compute_cell_count(og: f32, batch_size: u16) -> f32 {
 }
 
 fn compute_mcu(ebc: u8, grain_weight: f32, batch_size: u16) -> f32 {
-    (4.23 * (ebc as f32 * (grain_weight / 100.0))) / batch_size as f32
+    (4.23 * (ebc as f32) * (grain_weight / 1000.0)) / batch_size as f32
 }
 
 fn compute_ebc(total_mcu: f32) -> u8 {
-    (2.939 + total_mcu.powf(0.6859)) as u8
+    (2.939 * total_mcu.powf(0.6859)) as u8
 }
 
 fn compute_bugu(ibu: u8, og: f32) {
