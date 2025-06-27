@@ -165,12 +165,7 @@ impl App for BrewingCalcApp {
 
             ui.horizontal(|ui| {
                 ui.label("Densité initiale (°P) : ");
-                if ui
-                    .add(Slider::new(&mut self.original_gravity, 0.0..=25.0))
-                    .changed()
-                {
-                    self.abv = compute_abv(self.original_gravity, self.final_gravity);
-                };
+                ui.add(Slider::new(&mut self.original_gravity, 0.0..=25.0));
             });
 
             ui.add_space(DEFAULT_SPACING);
@@ -257,6 +252,8 @@ impl App for BrewingCalcApp {
 
             self.final_gravity =
                 compute_final_gravity(self.original_gravity, max_attenuation as f32);
+
+            self.abv = compute_abv(self.original_gravity, self.final_gravity);
 
             ui.add_space(DEFAULT_SPACING);
 
