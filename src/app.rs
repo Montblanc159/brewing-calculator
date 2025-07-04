@@ -374,7 +374,6 @@ impl App for BrewingCalcApp {
                 if ui.button("+").clicked() {
                     self.whirlpool_hops.push(WhirlpoolHop {
                         utilization: 0.12,
-                        weight: 1.0,
                         ..Default::default()
                     })
                 };
@@ -389,7 +388,7 @@ impl App for BrewingCalcApp {
             let mut ibu_left = self.ibu.clone();
 
             for hop in &mut self.whirlpool_hops {
-                whirlpool_hop_ui(ui, hop);
+                whirlpool_hop_ui(ui, self.batch_size, hop);
 
                 hop.ibu = compute_ibu(
                     hop.utilization,
@@ -408,7 +407,6 @@ impl App for BrewingCalcApp {
                 ui.label("Houblons");
                 if ui.button("+").clicked() {
                     self.hops.push(Hop {
-                        alpha_acids: 5.0,
                         ..Default::default()
                     })
                 };
@@ -492,7 +490,7 @@ fn fermentecible_ui(ui: &mut Ui, fermentecible: &mut Fermentecible) {
         ui.text_edit_singleline(&mut fermentecible.name);
         ui.label("Extrait (%)");
         ui.add(Slider::new(&mut fermentecible.extract, 0.0..=100.0));
-        ui.label("Humidité (g/L)");
+        ui.label("Humidité (%)");
         ui.add(Slider::new(&mut fermentecible.humidity, 0.0..=100.0));
         ui.label("EBC");
         ui.add(Slider::new(&mut fermentecible.ebc, 0..=150));
@@ -508,24 +506,25 @@ fn hop_ui(ui: &mut Ui, hop: &mut Hop) {
         ui.text_edit_singleline(&mut hop.name);
         ui.label("Acide alpha (%)");
         ui.add(Slider::new(&mut hop.alpha_acids, 0.0..=100.0));
-        ui.label(format!("Poids (g) : {}", hop.weight));
         ui.label("Temps d'addition");
         ui.add(Slider::new(&mut hop.addition_time, 0..=60));
         ui.label("Ratio");
         ui.add(Slider::new(&mut hop.ratio, 0..=100));
+        ui.label(format!("Poids (g) : {}", hop.weight));
         ui.label(format!("Utilisation : {}", hop.utilization));
         ui.label(format!("Contribution IBU : {}", hop.ibu));
     });
     ui.add_space(DEFAULT_SPACING);
 }
 
-fn whirlpool_hop_ui(ui: &mut Ui, hop: &mut WhirlpoolHop) {
+fn whirlpool_hop_ui(ui: &mut Ui, batch_size: u16, hop: &mut WhirlpoolHop) {
     ui.horizontal(|ui| {
         ui.text_edit_singleline(&mut hop.name);
         ui.label("Acide alpha (%)");
         ui.add(Slider::new(&mut hop.alpha_acids, 0.0..=100.0));
-        ui.label("Weight (g)");
+        ui.label("Poids (g)");
         ui.add(Slider::new(&mut hop.weight, 0.0..=10000.0));
+        ui.label(format!("{} g/l", hop.weight / batch_size as f32));
         ui.label("Temps d'addition: Whirlpool");
         ui.label(format!("Utilisation : {}", hop.utilization));
         ui.label(format!("Contribution IBU : {}", hop.ibu));
