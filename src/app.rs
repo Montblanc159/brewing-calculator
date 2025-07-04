@@ -150,311 +150,317 @@ impl App for BrewingCalcApp {
         //     ui.label("Hello World!");
         // });
 
+        // Add a lot of widgets here.
         CentralPanel::default().show(ctx, |ui| {
-            // The central panel the region left after adding TopPanel's and SidePanel's
-            ui.heading("Broutille");
+            ScrollArea::horizontal().show(ui, |ui| {
+                // The central panel the region left after adding TopPanel's and SidePanel's
+                ui.heading("Broutille");
 
-            ui.separator();
+                ui.separator();
 
-            ui.add_space(DEFAULT_SPACING);
-
-            ui.horizontal(|ui| {
-                ui.label("Nom : ");
-                ui.text_edit_singleline(&mut self.name);
-            });
-
-            ui.add_space(DEFAULT_SPACING);
-
-            ui.horizontal(|ui| {
-                ui.label("Style : ");
-                ui.text_edit_singleline(&mut self.style);
-            });
-
-            ui.add_space(DEFAULT_SPACING);
-
-            ui.label(format!("Alcool (%) : {}", self.abv));
-
-            ui.add_space(DEFAULT_SPACING);
-
-            ui.label(format!("EBC : {}", self.ebc));
-
-            ui.add_space(DEFAULT_SPACING);
-
-            ui.horizontal(|ui| {
-                ui.label("IBU : ");
-                ui.add(Slider::new(&mut self.ibu, 0.0..=150.0));
-            });
-
-            ui.add_space(DEFAULT_SPACING);
-
-            ui.label(format!("BUGU : {}", self.bugu));
-
-            self.bugu = compute_bugu(self.ibu, self.original_gravity);
-
-            ui.add_space(DEFAULT_SPACING);
-
-            ui.label(format!(
-                "Required cell count : {}",
-                compute_cell_count(self.original_gravity, self.batch_size)
-            ));
-
-            ui.add_space(DEFAULT_SPACING);
-
-            ui.horizontal(|ui| {
-                ui.label("Densité initiale (°P) : ");
-                ui.add(Slider::new(&mut self.original_gravity, 0.0..=25.0));
-                ui.label(format!("{} G", convert_plato_to_sg(self.original_gravity)));
-            });
-
-            ui.add_space(DEFAULT_SPACING);
-
-            ui.label(format!("Densité finale (°P): {}", self.final_gravity));
-
-            ui.add_space(DEFAULT_SPACING);
-
-            ui.horizontal(|ui| {
-                ui.label("Efficacité (%): ");
-                ui.add(Slider::new(&mut self.efficiency, 0..=100));
-            });
-
-            ui.add_space(DEFAULT_SPACING);
-
-            ui.horizontal(|ui| {
-                ui.label("Ratio d'eau à l'empâtage (L/kg): ");
-                ui.add(Slider::new(&mut self.mash_water_ratio, 0.0..=10.0));
-            });
-
-            ui.add_space(DEFAULT_SPACING);
-
-            ui.horizontal(|ui| {
-                ui.label("Taux d'évaporation (%): ");
-                ui.add(Slider::new(&mut self.evaporation_rate, 0.0..=10.0));
-            });
-
-            ui.add_space(DEFAULT_SPACING);
-
-            ui.label(format!(
-                "Volume d'eau à l'empatage (L): {}",
-                self.mash_water_vol
-            ));
-
-            ui.add_space(DEFAULT_SPACING);
-
-            ui.label(format!(
-                "Volume d'eau de rinçage (L): {}",
-                self.sparge_water_vol
-            ));
-
-            ui.add_space(DEFAULT_SPACING);
-
-            ui.label(format!(
-                "Volume d'eau pré-ébullition (L): {}",
-                self.pre_ebullition_water_vol
-            ));
-
-            ui.add_space(DEFAULT_SPACING);
-
-            ui.horizontal(|ui| {
-                ui.label("Volume (L): ");
-                ui.add(Slider::new(&mut self.batch_size, 0..=30000));
-            });
-
-            ui.add_space(DEFAULT_SPACING);
-
-            ui.horizontal(|ui| {
-                ui.label("Ferments");
-                if ui.button("+").clicked() {
-                    self.ferments.push(Ferment {
-                        ..Default::default()
-                    });
-                };
-
-                if ui.button("-").clicked() {
-                    self.ferments.pop();
-                };
-            });
-
-            ui.add_space(DEFAULT_SPACING);
-
-            for ferment in &mut self.ferments {
-                ferment_ui(ui, ferment);
-            }
-
-            // This is an arbitrary choice to handle cofermentations, has to be enhanced
-            let max_attenuation = self
-                .ferments
-                .iter()
-                .map(|ferment| ferment.attenuation)
-                .max()
-                .unwrap_or(0);
-
-            self.final_gravity =
-                compute_final_gravity(self.original_gravity, max_attenuation as f32);
-
-            self.abv = compute_abv(self.original_gravity, self.final_gravity);
-
-            ui.add_space(DEFAULT_SPACING);
-
-            ui.horizontal(|ui| {
-                ui.label("Fermentécibles");
-                if ui.button("+").clicked() {
-                    self.fermentecibles.push(Fermentecible {
-                        ..Default::default()
-                    })
-                };
-
-                if ui.button("-").clicked() {
-                    self.fermentecibles.pop();
-                };
-            });
-
-            ui.add_space(DEFAULT_SPACING);
-
-            let mut weights = vec![];
-            let mut mcus = vec![];
-            let mut ratios = vec![];
-
-            for fermentecible in &mut self.fermentecibles {
-                let total_extract: f32 = compute_total_extract(self.original_gravity);
-
-                let fermentecible_extractable = compute_per_malt_extractable(
-                    total_extract,
-                    fermentecible.ratio,
-                    self.efficiency,
-                );
-
-                fermentecible.weight = compute_grain_bill(
-                    self.batch_size,
-                    fermentecible_extractable,
-                    fermentecible.humidity,
-                    fermentecible.extract,
-                );
-
-                fermentecible.mcu =
-                    compute_mcu(fermentecible.ebc, fermentecible.weight, self.batch_size);
-
-                ratios.push(fermentecible.ratio);
-                weights.push(fermentecible.weight);
-                mcus.push(fermentecible.mcu);
-            }
-
-            self.ebc = compute_ebc(mcus.iter().sum());
-
-            for fermentecible in &mut self.fermentecibles {
-                fermentecible_ui(ui, fermentecible);
-            }
-
-            if !self.fermentecibles.is_empty() && check_ratios(ratios) {
-                ui.colored_label(
-                    ERROR_COLOR,
-                    "Problème de ratios : leur somme doit être égal à 100",
-                );
                 ui.add_space(DEFAULT_SPACING);
-            }
 
-            self.mash_water_vol =
-                compute_mash_water_vol(weights.iter().sum(), self.mash_water_ratio);
+                ui.horizontal(|ui| {
+                    ui.label("Nom : ");
+                    ui.text_edit_singleline(&mut self.name);
+                });
 
-            self.post_mash_water_vol =
-                compute_post_mash_water_vol(self.mash_water_vol, weights.iter().sum());
-
-            self.sparge_water_vol = compute_sparge_water_vol(
-                self.batch_size,
-                self.evaporation_rate,
-                self.post_mash_water_vol,
-            );
-
-            self.pre_ebullition_water_vol =
-                compute_pre_ebullition_water_vol(self.sparge_water_vol, self.post_mash_water_vol);
-
-            ui.add_space(DEFAULT_SPACING);
-
-            ui.horizontal(|ui| {
-                ui.label("Houblons au whirlpool");
-                if ui.button("+").clicked() {
-                    self.whirlpool_hops.push(WhirlpoolHop {
-                        utilization: 0.12,
-                        ..Default::default()
-                    })
-                };
-
-                if ui.button("-").clicked() {
-                    self.whirlpool_hops.pop();
-                };
-            });
-
-            ui.add_space(DEFAULT_SPACING);
-
-            for hop in &mut self.whirlpool_hops {
-                whirlpool_hop_ui(ui, self.batch_size, hop);
-
-                hop.ibu = compute_ibu(
-                    hop.utilization,
-                    self.batch_size,
-                    hop.alpha_acids,
-                    hop.weight,
-                    self.original_gravity,
-                );
-            }
-
-            ui.add_space(DEFAULT_SPACING);
-
-            ui.horizontal(|ui| {
-                ui.label("Houblons");
-                if ui.button("+").clicked() {
-                    self.hops.push(Hop {
-                        ..Default::default()
-                    })
-                };
-
-                if ui.button("-").clicked() {
-                    self.hops.pop();
-                };
-            });
-
-            ui.add_space(DEFAULT_SPACING);
-
-            let mut hop_ratios = vec![];
-            for hop in &mut self.hops {
-                hop_ui(ui, hop);
-
-                hop.utilization = compute_hop_utilization(self.original_gravity, hop.addition_time);
-
-                hop.weight = compute_hop_weight(
-                    hop.utilization,
-                    self.batch_size,
-                    hop.alpha_acids,
-                    self.whirlpool_hops
-                        .iter()
-                        .map(|w_hop| w_hop.ibu)
-                        .sum::<f32>()
-                        * (hop.ratio as f32 / 100.0),
-                    self.original_gravity,
-                );
-
-                hop.ibu = compute_ibu(
-                    hop.utilization,
-                    self.batch_size,
-                    hop.alpha_acids,
-                    hop.weight,
-                    self.original_gravity,
-                );
-
-                hop_ratios.push(hop.ratio)
-            }
-
-            if !self.hops.is_empty() && check_ratios(hop_ratios) {
-                ui.colored_label(
-                    ERROR_COLOR,
-                    "Problème de ratios : leur somme doit être égal à 100",
-                );
                 ui.add_space(DEFAULT_SPACING);
-            }
 
-            ui.separator();
-            ui.with_layout(Layout::bottom_up(Align::LEFT), |ui| {
-                powered_by_egui_and_eframe(ui);
-                warn_if_debug_build(ui);
+                ui.horizontal(|ui| {
+                    ui.label("Style : ");
+                    ui.text_edit_singleline(&mut self.style);
+                });
+
+                ui.add_space(DEFAULT_SPACING);
+
+                ui.label(format!("Alcool (%) : {}", self.abv));
+
+                ui.add_space(DEFAULT_SPACING);
+
+                ui.label(format!("EBC : {}", self.ebc));
+
+                ui.add_space(DEFAULT_SPACING);
+
+                ui.horizontal(|ui| {
+                    ui.label("IBU : ");
+                    ui.add(Slider::new(&mut self.ibu, 0.0..=150.0));
+                });
+
+                ui.add_space(DEFAULT_SPACING);
+
+                ui.label(format!("BUGU : {}", self.bugu));
+
+                self.bugu = compute_bugu(self.ibu, self.original_gravity);
+
+                ui.add_space(DEFAULT_SPACING);
+
+                ui.label(format!(
+                    "Required cell count : {}",
+                    compute_cell_count(self.original_gravity, self.batch_size)
+                ));
+
+                ui.add_space(DEFAULT_SPACING);
+
+                ui.horizontal(|ui| {
+                    ui.label("Densité initiale (°P) : ");
+                    ui.add(Slider::new(&mut self.original_gravity, 0.0..=25.0));
+                    ui.label(format!("{} G", convert_plato_to_sg(self.original_gravity)));
+                });
+
+                ui.add_space(DEFAULT_SPACING);
+
+                ui.label(format!("Densité finale (°P): {}", self.final_gravity));
+
+                ui.add_space(DEFAULT_SPACING);
+
+                ui.horizontal(|ui| {
+                    ui.label("Efficacité (%): ");
+                    ui.add(Slider::new(&mut self.efficiency, 0..=100));
+                });
+
+                ui.add_space(DEFAULT_SPACING);
+
+                ui.horizontal(|ui| {
+                    ui.label("Ratio d'eau à l'empâtage (L/kg): ");
+                    ui.add(Slider::new(&mut self.mash_water_ratio, 0.0..=10.0));
+                });
+
+                ui.add_space(DEFAULT_SPACING);
+
+                ui.horizontal(|ui| {
+                    ui.label("Taux d'évaporation (%): ");
+                    ui.add(Slider::new(&mut self.evaporation_rate, 0.0..=10.0));
+                });
+
+                ui.add_space(DEFAULT_SPACING);
+
+                ui.label(format!(
+                    "Volume d'eau à l'empatage (L): {}",
+                    self.mash_water_vol
+                ));
+
+                ui.add_space(DEFAULT_SPACING);
+
+                ui.label(format!(
+                    "Volume d'eau de rinçage (L): {}",
+                    self.sparge_water_vol
+                ));
+
+                ui.add_space(DEFAULT_SPACING);
+
+                ui.label(format!(
+                    "Volume d'eau pré-ébullition (L): {}",
+                    self.pre_ebullition_water_vol
+                ));
+
+                ui.add_space(DEFAULT_SPACING);
+
+                ui.horizontal(|ui| {
+                    ui.label("Volume (L): ");
+                    ui.add(Slider::new(&mut self.batch_size, 0..=30000));
+                });
+
+                ui.add_space(DEFAULT_SPACING);
+
+                ui.horizontal(|ui| {
+                    ui.label("Ferments");
+                    if ui.button("+").clicked() {
+                        self.ferments.push(Ferment {
+                            ..Default::default()
+                        });
+                    };
+
+                    if ui.button("-").clicked() {
+                        self.ferments.pop();
+                    };
+                });
+
+                ui.add_space(DEFAULT_SPACING);
+
+                for ferment in &mut self.ferments {
+                    ferment_ui(ui, ferment);
+                }
+
+                // This is an arbitrary choice to handle cofermentations, has to be enhanced
+                let max_attenuation = self
+                    .ferments
+                    .iter()
+                    .map(|ferment| ferment.attenuation)
+                    .max()
+                    .unwrap_or(0);
+
+                self.final_gravity =
+                    compute_final_gravity(self.original_gravity, max_attenuation as f32);
+
+                self.abv = compute_abv(self.original_gravity, self.final_gravity);
+
+                ui.add_space(DEFAULT_SPACING);
+
+                ui.horizontal(|ui| {
+                    ui.label("Fermentécibles");
+                    if ui.button("+").clicked() {
+                        self.fermentecibles.push(Fermentecible {
+                            ..Default::default()
+                        })
+                    };
+
+                    if ui.button("-").clicked() {
+                        self.fermentecibles.pop();
+                    };
+                });
+
+                ui.add_space(DEFAULT_SPACING);
+
+                let mut weights = vec![];
+                let mut mcus = vec![];
+                let mut ratios = vec![];
+
+                for fermentecible in &mut self.fermentecibles {
+                    let total_extract: f32 = compute_total_extract(self.original_gravity);
+
+                    let fermentecible_extractable = compute_per_malt_extractable(
+                        total_extract,
+                        fermentecible.ratio,
+                        self.efficiency,
+                    );
+
+                    fermentecible.weight = compute_grain_bill(
+                        self.batch_size,
+                        fermentecible_extractable,
+                        fermentecible.humidity,
+                        fermentecible.extract,
+                    );
+
+                    fermentecible.mcu =
+                        compute_mcu(fermentecible.ebc, fermentecible.weight, self.batch_size);
+
+                    ratios.push(fermentecible.ratio);
+                    weights.push(fermentecible.weight);
+                    mcus.push(fermentecible.mcu);
+                }
+
+                self.ebc = compute_ebc(mcus.iter().sum());
+
+                for fermentecible in &mut self.fermentecibles {
+                    fermentecible_ui(ui, fermentecible);
+                }
+
+                if !self.fermentecibles.is_empty() && check_ratios(ratios) {
+                    ui.colored_label(
+                        ERROR_COLOR,
+                        "Problème de ratios : leur somme doit être égal à 100",
+                    );
+                    ui.add_space(DEFAULT_SPACING);
+                }
+
+                self.mash_water_vol =
+                    compute_mash_water_vol(weights.iter().sum(), self.mash_water_ratio);
+
+                self.post_mash_water_vol =
+                    compute_post_mash_water_vol(self.mash_water_vol, weights.iter().sum());
+
+                self.sparge_water_vol = compute_sparge_water_vol(
+                    self.batch_size,
+                    self.evaporation_rate,
+                    self.post_mash_water_vol,
+                );
+
+                self.pre_ebullition_water_vol = compute_pre_ebullition_water_vol(
+                    self.sparge_water_vol,
+                    self.post_mash_water_vol,
+                );
+
+                ui.add_space(DEFAULT_SPACING);
+
+                ui.horizontal(|ui| {
+                    ui.label("Houblons au whirlpool");
+                    if ui.button("+").clicked() {
+                        self.whirlpool_hops.push(WhirlpoolHop {
+                            utilization: 0.12,
+                            ..Default::default()
+                        })
+                    };
+
+                    if ui.button("-").clicked() {
+                        self.whirlpool_hops.pop();
+                    };
+                });
+
+                ui.add_space(DEFAULT_SPACING);
+
+                for hop in &mut self.whirlpool_hops {
+                    whirlpool_hop_ui(ui, self.batch_size, hop);
+
+                    hop.ibu = compute_ibu(
+                        hop.utilization,
+                        self.batch_size,
+                        hop.alpha_acids,
+                        hop.weight,
+                        self.original_gravity,
+                    );
+                }
+
+                ui.add_space(DEFAULT_SPACING);
+
+                ui.horizontal(|ui| {
+                    ui.label("Houblons");
+                    if ui.button("+").clicked() {
+                        self.hops.push(Hop {
+                            ..Default::default()
+                        })
+                    };
+
+                    if ui.button("-").clicked() {
+                        self.hops.pop();
+                    };
+                });
+
+                ui.add_space(DEFAULT_SPACING);
+
+                let mut hop_ratios = vec![];
+                for hop in &mut self.hops {
+                    hop_ui(ui, hop);
+
+                    hop.utilization =
+                        compute_hop_utilization(self.original_gravity, hop.addition_time);
+
+                    hop.weight = compute_hop_weight(
+                        hop.utilization,
+                        self.batch_size,
+                        hop.alpha_acids,
+                        self.whirlpool_hops
+                            .iter()
+                            .map(|w_hop| w_hop.ibu)
+                            .sum::<f32>()
+                            * (hop.ratio as f32 / 100.0),
+                        self.original_gravity,
+                    );
+
+                    hop.ibu = compute_ibu(
+                        hop.utilization,
+                        self.batch_size,
+                        hop.alpha_acids,
+                        hop.weight,
+                        self.original_gravity,
+                    );
+
+                    hop_ratios.push(hop.ratio)
+                }
+
+                if !self.hops.is_empty() && check_ratios(hop_ratios) {
+                    ui.colored_label(
+                        ERROR_COLOR,
+                        "Problème de ratios : leur somme doit être égal à 100",
+                    );
+                    ui.add_space(DEFAULT_SPACING);
+                }
+
+                ui.separator();
+                ui.with_layout(Layout::bottom_up(Align::LEFT), |ui| {
+                    powered_by_egui_and_eframe(ui);
+                    warn_if_debug_build(ui);
+                });
             });
         });
     }
