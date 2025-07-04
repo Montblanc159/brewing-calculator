@@ -43,8 +43,7 @@ pub fn compute_sparge_water_vol(
     evaporation_rate: f32,
     post_mash_water_vol: f32,
 ) -> f32 {
-    (batch_size as f32 + (batch_size as f32 * (evaporation_rate as f32 / 100.0)))
-        - post_mash_water_vol
+    (batch_size as f32 + (batch_size as f32 * (evaporation_rate / 100.0))) - post_mash_water_vol
 }
 
 pub fn compute_pre_ebullition_water_vol(sparge_water_vol: f32, post_mash_water_vol: f32) -> f32 {
@@ -79,6 +78,7 @@ pub fn compute_cell_count(og: f32, batch_size: u16) -> f32 {
 /// Hop utilization is caculated using Glenn Tinseth's formula
 /// http://univers-biere.net/amertume.php
 /// https://www.backtoschoolbrewing.com/blog/2016/9/5/how-to-calculate-ibus
+/// https://realbeer.com/hops/research.html
 ///
 /// density argument is expressed in plato and converted in specific gravity
 pub fn compute_hop_utilization(density: f32, time: u8) -> f32 {
@@ -87,7 +87,9 @@ pub fn compute_hop_utilization(density: f32, time: u8) -> f32 {
     let density_pow: f32 = density - 1.0;
     let time_pow: f32 = -0.04 * (time as f32);
 
-    1.65 * 0.000125_f32.powf(density_pow) * ((1.0 - 2.71828_f32.powf(time_pow)) / 4.15) + 0.10
+    let x: f32 = 0.000125;
+
+    1.65 * x.powf(density_pow) * ((1.0 - std::f32::consts::E.powf(time_pow)) / 4.15) + 0.10
 }
 
 pub fn compute_ibu(
@@ -99,10 +101,10 @@ pub fn compute_ibu(
 ) -> f32 {
     let density_in_sg = convert_plato_to_sg(density);
     if density_in_sg > 1.050 {
-        (hop_weight * hop_utilization * alpha as f32 * 10.0)
+        (hop_weight * hop_utilization * alpha * 10.0)
             / (batch_size as f32 * density_correction(density_in_sg))
     } else {
-        (hop_weight * hop_utilization * alpha as f32 * 10.0) / batch_size as f32
+        (hop_weight * hop_utilization * alpha * 10.0) / batch_size as f32
     }
 }
 
@@ -116,9 +118,9 @@ pub fn compute_hop_weight(
     let density_in_sg = convert_plato_to_sg(density);
     if density_in_sg > 1.050 {
         (batch_size as f32 * density_correction(density_in_sg) * ibu)
-            / (hop_utilization * alpha as f32 * 10.0)
+            / (hop_utilization * alpha * 10.0)
     } else {
-        (batch_size as f32 * ibu) / (hop_utilization * alpha as f32 * 10.0)
+        (batch_size as f32 * ibu) / (hop_utilization * alpha * 10.0)
     }
 }
 

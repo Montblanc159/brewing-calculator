@@ -146,13 +146,13 @@ impl App for BrewingCalcApp {
             });
         });
 
-        SidePanel::left("my_left_panel").show(ctx, |ui| {
-            ui.label("Hello World!");
-        });
+        // SidePanel::left("my_left_panel").show(ctx, |ui| {
+        //     ui.label("Hello World!");
+        // });
 
         CentralPanel::default().show(ctx, |ui| {
             // The central panel the region left after adding TopPanel's and SidePanel's
-            ui.heading("Recette");
+            ui.heading("Broutille");
 
             ui.separator();
 
@@ -344,7 +344,7 @@ impl App for BrewingCalcApp {
                 fermentecible_ui(ui, fermentecible);
             }
 
-            if self.fermentecibles.len() > 0 && check_ratios(ratios) {
+            if !self.fermentecibles.is_empty() && check_ratios(ratios) {
                 ui.colored_label(
                     ERROR_COLOR,
                     "Problème de ratios : leur somme doit être égal à 100",
@@ -443,7 +443,7 @@ impl App for BrewingCalcApp {
                 hop_ratios.push(hop.ratio)
             }
 
-            if self.hops.len() > 0 && check_ratios(hop_ratios) {
+            if !self.hops.is_empty() && check_ratios(hop_ratios) {
                 ui.colored_label(
                     ERROR_COLOR,
                     "Problème de ratios : leur somme doit être égal à 100",
