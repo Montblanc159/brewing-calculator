@@ -385,8 +385,6 @@ impl App for BrewingCalcApp {
 
             ui.add_space(DEFAULT_SPACING);
 
-            let mut ibu_left = self.ibu.clone();
-
             for hop in &mut self.whirlpool_hops {
                 whirlpool_hop_ui(ui, self.batch_size, hop);
 
@@ -397,8 +395,6 @@ impl App for BrewingCalcApp {
                     hop.weight,
                     self.original_gravity,
                 );
-
-                ibu_left -= hop.ibu;
             }
 
             ui.add_space(DEFAULT_SPACING);
@@ -428,7 +424,11 @@ impl App for BrewingCalcApp {
                     hop.utilization,
                     self.batch_size,
                     hop.alpha_acids,
-                    ibu_left * (hop.ratio as f32 / 100.0),
+                    self.whirlpool_hops
+                        .iter()
+                        .map(|w_hop| w_hop.ibu)
+                        .sum::<f32>()
+                        * (hop.ratio as f32 / 100.0),
                     self.original_gravity,
                 );
 
