@@ -6,7 +6,7 @@ pub fn check_ratios(ratios: Vec<u8>) -> bool {
     ratios.iter().sum::<u8>() != 100
 }
 
-// g/L
+/// g/L
 pub fn compute_total_extract(og: f32) -> f32 {
     (0.9974 / ((1.0 / og) - 0.00382) + 0.01) * 10.0
 }
@@ -54,6 +54,9 @@ pub fn compute_mcu(ebc: u8, grain_weight: f32, batch_size: u16) -> f32 {
     (4.23 * (ebc as f32) * (grain_weight / 1000.0)) / batch_size as f32
 }
 
+/// Morey's formula
+/// https://www.brassageamateur.com/wiki/Formules#Couleur_de_la_bi.C3.A8re
+///
 pub fn compute_ebc(total_mcu: f32) -> u8 {
     (2.939 * total_mcu.powf(0.6859)) as u8
 }
@@ -62,7 +65,8 @@ pub fn compute_bugu(ibu: f32, og: f32) -> f32 {
     ibu / ((convert_plato_to_sg(og) - 1.0) * 1000.0)
 }
 
-///https://www.brewersfriend.com/plato-to-sg-conversion-chart/
+/// https://www.brewersfriend.com/plato-to-sg-conversion-chart/
+///
 pub fn convert_plato_to_sg(plato: f32) -> f32 {
     1.0 + (plato / (258.6 - ((plato / 258.2) * 227.1)))
 }

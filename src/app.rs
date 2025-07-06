@@ -224,49 +224,54 @@ impl App for BrewingCalcApp {
                     });
 
                     ui.add_space(DEFAULT_SPACING);
-
-                    ui.horizontal(|ui| {
-                        ui.label("Ratio d'eau à l'empâtage (L/kg): ");
-                        ui.add(Slider::new(&mut self.mash_water_ratio, 0.0..=10.0));
-                    });
-
+                    ui.heading("Eau");
                     ui.add_space(DEFAULT_SPACING);
 
-                    ui.horizontal(|ui| {
-                        ui.label("Taux d'évaporation (%): ");
-                        ui.add(Slider::new(&mut self.evaporation_rate, 0.0..=10.0));
-                    });
+                    egui::Frame::new()
+                        .fill(LIGHTER_COLOR)
+                        .inner_margin(DEFAULT_PADDING)
+                        .corner_radius(DEFAULT_CORNER_RADIUS)
+                        .show(ui, |ui| {
+                            ui.horizontal(|ui| {
+                                ui.label("Ratio d'eau à l'empâtage (L/kg): ");
+                                ui.add(Slider::new(&mut self.mash_water_ratio, 0.0..=10.0));
+                            });
 
-                    ui.add_space(DEFAULT_SPACING);
+                            ui.add_space(DEFAULT_SPACING);
 
-                    ui.label(format!(
-                        "Volume d'eau à l'empatage (L): {}",
-                        self.mash_water_vol
-                    ));
+                            ui.horizontal(|ui| {
+                                ui.label("Taux d'évaporation (%): ");
+                                ui.add(Slider::new(&mut self.evaporation_rate, 0.0..=10.0));
+                            });
 
-                    ui.add_space(DEFAULT_SPACING);
+                            ui.add_space(DEFAULT_SPACING);
 
-                    ui.label(format!(
-                        "Volume d'eau de rinçage (L): {}",
-                        self.sparge_water_vol
-                    ));
+                            ui.label(format!(
+                                "Volume d'eau à l'empatage (L): {}",
+                                self.mash_water_vol
+                            ));
 
-                    ui.add_space(DEFAULT_SPACING);
+                            ui.add_space(DEFAULT_SPACING);
 
-                    ui.label(format!(
-                        "Volume d'eau pré-ébullition (L): {}",
-                        self.pre_ebullition_water_vol
-                    ));
+                            ui.label(format!(
+                                "Volume d'eau de rinçage (L): {}",
+                                self.sparge_water_vol
+                            ));
 
-                    ui.add_space(DEFAULT_SPACING);
+                            ui.add_space(DEFAULT_SPACING);
 
-                    ui.horizontal(|ui| {
-                        ui.label("Volume (L): ");
-                        ui.add(Slider::new(&mut self.batch_size, 0..=30000));
-                    });
+                            ui.label(format!(
+                                "Volume d'eau pré-ébullition (L): {}",
+                                self.pre_ebullition_water_vol
+                            ));
 
-                    ui.add_space(DEFAULT_SPACING);
-                    ui.separator();
+                            ui.add_space(DEFAULT_SPACING);
+
+                            ui.horizontal(|ui| {
+                                ui.label("Volume (L): ");
+                                ui.add(Slider::new(&mut self.batch_size, 0..=30000));
+                            });
+                        });
                     ui.add_space(DEFAULT_SPACING);
 
                     ui.horizontal(|ui| {
