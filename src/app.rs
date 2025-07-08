@@ -38,15 +38,18 @@ struct Hop {
     weight: f32,
     ibu: f32,
     ratio: u8,
+    addition_temp: f32,
 }
 
 #[derive(Deserialize, Serialize, Default)]
 struct WhirlpoolHop {
     name: String,
     alpha_acids: f32,
+    addition_time: u8,
     weight: f32,
     utilization: f32,
     ibu: f32,
+    addition_temp: f32,
 }
 
 /// We derive Deserialize/Serialize so we can persist app state on shutdown.
@@ -148,10 +151,6 @@ impl App for BrewingCalcApp {
                 widgets::global_theme_preference_buttons(ui);
             });
         });
-
-        // SidePanel::left("my_left_panel").show(ctx, |ui| {
-        //     ui.label("Hello World!");
-        // });
 
         // Add a lot of widgets here.
         CentralPanel::default().show(ctx, |ui| {
@@ -292,9 +291,9 @@ impl App for BrewingCalcApp {
                     .id_salt("first_scroll")
                     .show(ui, |ui| {
                         ui.horizontal(|ui| {
-                            for ferment in &mut self.ferments {
+                            for (index, ferment) in &mut self.ferments.iter_mut().enumerate() {
                                 ui.vertical(|ui| {
-                                    ferment_ui(ui, ferment);
+                                    ferment_ui(ui, index, ferment);
                                 });
                             }
                         });
@@ -364,9 +363,11 @@ impl App for BrewingCalcApp {
                     .id_salt("second_scroll")
                     .show(ui, |ui| {
                         ui.horizontal(|ui| {
-                            for fermentecible in &mut self.fermentecibles {
+                            for (index, fermentecible) in
+                                &mut self.fermentecibles.iter_mut().enumerate()
+                            {
                                 ui.vertical(|ui| {
-                                    fermentecible_ui(ui, fermentecible);
+                                    fermentecible_ui(ui, index, fermentecible);
                                 });
                             }
                         });
@@ -403,7 +404,7 @@ impl App for BrewingCalcApp {
                     ui.heading("Houblons au whirlpool");
                     if ui.button("+").clicked() {
                         self.whirlpool_hops.push(WhirlpoolHop {
-                            utilization: 0.12,
+                            addition_time: 0,
                             ..Default::default()
                         })
                     };
@@ -419,10 +420,15 @@ impl App for BrewingCalcApp {
                     .id_salt("third_scroll")
                     .show(ui, |ui| {
                         ui.horizontal(|ui| {
-                            for hop in &mut self.whirlpool_hops {
+                            for (index, hop) in &mut self.whirlpool_hops.iter_mut().enumerate() {
                                 ui.vertical(|ui| {
-                                    whirlpool_hop_ui(ui, self.batch_size, hop);
+                                    whirlpool_hop_ui(ui, self.batch_size, index, hop);
                                 });
+
+                                hop.utilization = compute_hop_utilization(
+                                    self.original_gravity,
+                                    hop.addition_time,
+                                );
 
                                 hop.ibu = compute_ibu(
                                     hop.utilization,
@@ -430,6 +436,7 @@ impl App for BrewingCalcApp {
                                     hop.alpha_acids,
                                     hop.weight,
                                     self.original_gravity,
+                                    hop.addition_temp,
                                 );
                             }
                         });
@@ -441,6 +448,7 @@ impl App for BrewingCalcApp {
                     ui.heading("Houblons");
                     if ui.button("+").clicked() {
                         self.hops.push(Hop {
+                            addition_temp: 100.0,
                             ..Default::default()
                         })
                     };
@@ -457,9 +465,9 @@ impl App for BrewingCalcApp {
                     .id_salt("fourth_scroll")
                     .show(ui, |ui| {
                         ui.horizontal(|ui| {
-                            for hop in &mut self.hops {
+                            for (index, hop) in &mut self.hops.iter_mut().enumerate() {
                                 ui.vertical(|ui| {
-                                    hop_ui(ui, hop);
+                                    hop_ui(ui, index, hop);
                                 });
 
                                 hop.utilization = compute_hop_utilization(
@@ -480,6 +488,7 @@ impl App for BrewingCalcApp {
                                     hop.alpha_acids,
                                     ibu_left * (hop.ratio as f32 / 100.0),
                                     self.original_gravity,
+                                    hop.addition_temp,
                                 );
 
                                 hop.ibu = compute_ibu(
@@ -488,6 +497,7 @@ impl App for BrewingCalcApp {
                                     hop.alpha_acids,
                                     hop.weight,
                                     self.original_gravity,
+                                    hop.addition_temp,
                                 );
 
                                 hop_ratios.push(hop.ratio)
@@ -507,91 +517,115 @@ impl App for BrewingCalcApp {
     }
 }
 
-fn ferment_ui(ui: &mut Ui, ferment: &mut Ferment) {
-    egui::Frame::new()
-        .fill(LIGHTER_COLOR)
-        .inner_margin(DEFAULT_PADDING)
-        .corner_radius(DEFAULT_CORNER_RADIUS)
-        .show(ui, |ui| {
-            ui.text_edit_singleline(&mut ferment.name);
-            ui.add_space(DEFAULT_SPACING);
-            ui.label("Atténuation (%)");
-            ui.add(Slider::new(&mut ferment.attenuation, 0..=100));
-            ui.add_space(DEFAULT_SPACING);
-            ui.label("Taux d'ensemencement (g/L)");
-            ui.add(Slider::new(&mut ferment.pitch_rate, 0.0..=30.0));
+fn ferment_ui(ui: &mut Ui, index: usize, ferment: &mut Ferment) {
+    Window::new(format!("Ferment {}", index + 1))
+        .default_size([250., 250.])
+        .show(ui.ctx(), |ui| {
+            egui::Frame::new()
+                .fill(LIGHTER_COLOR)
+                .inner_margin(DEFAULT_PADDING)
+                .corner_radius(DEFAULT_CORNER_RADIUS)
+                .show(ui, |ui| {
+                    ui.text_edit_singleline(&mut ferment.name);
+                    ui.add_space(DEFAULT_SPACING);
+                    ui.label("Atténuation (%)");
+                    ui.add(Slider::new(&mut ferment.attenuation, 0..=100));
+                    ui.add_space(DEFAULT_SPACING);
+                    ui.label("Taux d'ensemencement (g/L)");
+                    ui.add(Slider::new(&mut ferment.pitch_rate, 0.0..=30.0));
+                });
         });
 }
 
-fn fermentecible_ui(ui: &mut Ui, fermentecible: &mut Fermentecible) {
-    egui::Frame::new()
-        .fill(LIGHTER_COLOR)
-        .inner_margin(DEFAULT_PADDING)
-        .corner_radius(DEFAULT_CORNER_RADIUS)
-        .show(ui, |ui| {
-            ui.text_edit_singleline(&mut fermentecible.name);
-            ui.add_space(DEFAULT_SPACING);
-            ui.label("Extrait (%)");
-            ui.add(Slider::new(&mut fermentecible.extract, 0.0..=100.0));
-            ui.add_space(DEFAULT_SPACING);
-            ui.label("Humidité (%)");
-            ui.add(Slider::new(&mut fermentecible.humidity, 0.0..=100.0));
-            ui.add_space(DEFAULT_SPACING);
-            ui.label("EBC");
-            ui.add(Slider::new(&mut fermentecible.ebc, 0..=150));
-            ui.add_space(DEFAULT_SPACING);
-            ui.label("Ratio (%)");
-            ui.add(Slider::new(&mut fermentecible.ratio, 0..=100));
-            ui.add_space(DEFAULT_SPACING);
-            ui.label(format!("Poid : {} g", fermentecible.weight));
+fn fermentecible_ui(ui: &mut Ui, index: usize, fermentecible: &mut Fermentecible) {
+    Window::new(format!("Fermentescible {}", index + 1))
+        .default_size([250., 250.])
+        .show(ui.ctx(), |ui| {
+            egui::Frame::new()
+                .fill(LIGHTER_COLOR)
+                .inner_margin(DEFAULT_PADDING)
+                .corner_radius(DEFAULT_CORNER_RADIUS)
+                .show(ui, |ui| {
+                    ui.text_edit_singleline(&mut fermentecible.name);
+                    ui.add_space(DEFAULT_SPACING);
+                    ui.label("Extrait (%)");
+                    ui.add(Slider::new(&mut fermentecible.extract, 0.0..=100.0));
+                    ui.add_space(DEFAULT_SPACING);
+                    ui.label("Humidité (%)");
+                    ui.add(Slider::new(&mut fermentecible.humidity, 0.0..=100.0));
+                    ui.add_space(DEFAULT_SPACING);
+                    ui.label("EBC");
+                    ui.add(Slider::new(&mut fermentecible.ebc, 0..=150));
+                    ui.add_space(DEFAULT_SPACING);
+                    ui.label("Ratio (%)");
+                    ui.add(Slider::new(&mut fermentecible.ratio, 0..=100));
+                    ui.add_space(DEFAULT_SPACING);
+                    ui.label(format!("Poid : {} g", fermentecible.weight));
+                });
         });
 }
 
-fn hop_ui(ui: &mut Ui, hop: &mut Hop) {
-    egui::Frame::new()
-        .fill(LIGHTER_COLOR)
-        .inner_margin(DEFAULT_PADDING)
-        .corner_radius(DEFAULT_CORNER_RADIUS)
-        .show(ui, |ui| {
-            ui.text_edit_singleline(&mut hop.name);
-            ui.add_space(DEFAULT_SPACING);
-            ui.label("Acide alpha (%)");
-            ui.add(Slider::new(&mut hop.alpha_acids, 0.0..=100.0));
-            ui.add_space(DEFAULT_SPACING);
-            ui.label("Temps d'addition");
-            ui.add(Slider::new(&mut hop.addition_time, 0..=60));
-            ui.add_space(DEFAULT_SPACING);
-            ui.label("Ratio");
-            ui.add(Slider::new(&mut hop.ratio, 0..=100));
-            ui.add_space(DEFAULT_SPACING);
-            ui.label(format!("Poids (g) : {}", hop.weight));
-            ui.add_space(DEFAULT_SPACING);
-            ui.label(format!("Utilisation : {}", hop.utilization));
-            ui.add_space(DEFAULT_SPACING);
-            ui.label(format!("Contribution IBU : {}", hop.ibu));
+fn hop_ui(ui: &mut Ui, index: usize, hop: &mut Hop) {
+    Window::new(format!("Houblon {}", index + 1))
+        .default_size([250., 250.])
+        .show(ui.ctx(), |ui| {
+            egui::Frame::new()
+                .fill(LIGHTER_COLOR)
+                .inner_margin(DEFAULT_PADDING)
+                .corner_radius(DEFAULT_CORNER_RADIUS)
+                .show(ui, |ui| {
+                    ui.text_edit_singleline(&mut hop.name);
+                    ui.add_space(DEFAULT_SPACING);
+                    ui.label("Acide alpha (%)");
+                    ui.add(Slider::new(&mut hop.alpha_acids, 0.0..=100.0));
+                    ui.add_space(DEFAULT_SPACING);
+                    ui.label("Temps d'addition");
+                    ui.add(Slider::new(&mut hop.addition_time, 0..=60));
+                    ui.add_space(DEFAULT_SPACING);
+                    ui.label(format!(
+                        "Température d'addition (°C) : {}",
+                        hop.addition_temp
+                    ));
+                    ui.add_space(DEFAULT_SPACING);
+                    ui.label("Ratio");
+                    ui.add(Slider::new(&mut hop.ratio, 0..=100));
+                    ui.add_space(DEFAULT_SPACING);
+                    ui.label(format!("Poids (g) : {}", hop.weight));
+                    ui.add_space(DEFAULT_SPACING);
+                    ui.label(format!("Utilisation : {}", hop.utilization));
+                    ui.add_space(DEFAULT_SPACING);
+                    ui.label(format!("Contribution IBU : {}", hop.ibu));
+                });
         });
 }
 
-fn whirlpool_hop_ui(ui: &mut Ui, batch_size: u16, hop: &mut WhirlpoolHop) {
-    egui::Frame::new()
-        .fill(LIGHTER_COLOR)
-        .inner_margin(DEFAULT_PADDING)
-        .corner_radius(DEFAULT_CORNER_RADIUS)
-        .show(ui, |ui| {
-            ui.text_edit_singleline(&mut hop.name);
-            ui.add_space(DEFAULT_SPACING);
-            ui.label("Acide alpha (%)");
-            ui.add(Slider::new(&mut hop.alpha_acids, 0.0..=100.0));
-            ui.add_space(DEFAULT_SPACING);
-            ui.label("Poids (g)");
-            ui.add(Slider::new(&mut hop.weight, 0.0..=10000.0));
-            ui.add_space(DEFAULT_SPACING);
-            ui.label(format!("{} g/l", hop.weight / batch_size as f32));
-            ui.add_space(DEFAULT_SPACING);
-            ui.label("Temps d'addition: Whirlpool");
-            ui.add_space(DEFAULT_SPACING);
-            ui.label(format!("Utilisation : {}", hop.utilization));
-            ui.add_space(DEFAULT_SPACING);
-            ui.label(format!("Contribution IBU : {}", hop.ibu));
+fn whirlpool_hop_ui(ui: &mut Ui, batch_size: u16, index: usize, hop: &mut WhirlpoolHop) {
+    Window::new(format!("Houblon au W {}", index + 1))
+        .default_size([250., 250.])
+        .show(ui.ctx(), |ui| {
+            egui::Frame::new()
+                .fill(LIGHTER_COLOR)
+                .inner_margin(DEFAULT_PADDING)
+                .corner_radius(DEFAULT_CORNER_RADIUS)
+                .show(ui, |ui| {
+                    ui.text_edit_singleline(&mut hop.name);
+                    ui.add_space(DEFAULT_SPACING);
+                    ui.label("Acide alpha (%)");
+                    ui.add(Slider::new(&mut hop.alpha_acids, 0.0..=100.0));
+                    ui.add_space(DEFAULT_SPACING);
+                    ui.label("Poids (g)");
+                    ui.add(Slider::new(&mut hop.weight, 0.0..=10000.0));
+                    ui.add_space(DEFAULT_SPACING);
+                    ui.label(format!("{} g/l", hop.weight / batch_size as f32));
+                    ui.add_space(DEFAULT_SPACING);
+                    ui.label("Temps d'addition: Whirlpool");
+                    ui.add_space(DEFAULT_SPACING);
+                    ui.label("Température d'addition (°C)");
+                    ui.add(Slider::new(&mut hop.addition_temp, 0.0..=100.0));
+                    ui.add_space(DEFAULT_SPACING);
+                    ui.label(format!("Utilisation : {}", hop.utilization));
+                    ui.add_space(DEFAULT_SPACING);
+                    ui.label(format!("Contribution IBU : {}", hop.ibu));
+                });
         });
 }
