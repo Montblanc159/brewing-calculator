@@ -2,6 +2,8 @@ use eframe::*;
 use egui::*;
 use serde::{Deserialize, Serialize};
 use serde_json;
+
+#[cfg(not(target_arch = "wasm32"))]
 use std::fs;
 use std::process::exit;
 
@@ -268,14 +270,35 @@ fn style_ui(style: &mut BeerStyle, ctx: &Context) {
         });
 }
 
-pub fn parse_toml() -> BeerStyles {
+pub fn parse_json() -> BeerStyles {
+    // Use a `match` block to return the
+    // file `contents` as a `Data struct: Ok(d)`
+    // or handle any `errors: Err(_)`.
+    let data: BeerStyles = match serde_json::from_str(&fetch_json()) {
+        // If successful, return data as `Data` struct.
+        // `d` is a local variable.
+        Ok(d) => d,
+        // Handle the `error` case.
+        Err(_) => {
+            // Write `msg` to `stderr`.
+            eprintln!("Unable to load data from `beer_styles.json`");
+            // Exit the program with exit code `1`.
+            exit(1);
+        }
+    };
+
+    data
+}
+
+#[cfg(not(target_arch = "wasm32"))]
+pub fn fetch_json() -> String {
     // Variable that holds the filename as a `&str`.
     let filename = "src/app/modules/bjcp_style_index/assets/beer_styles.json";
 
     // Read the contents of the file using a `match` block
     // to return the `data: Ok(c)` as a `String`
     // or handle any `errors: Err(_)`.
-    let contents = match fs::read_to_string(filename) {
+    match fs::read_to_string(filename) {
         // If successful return the files text as `contents`.
         // `c` is a local variable.
         Ok(c) => c,
@@ -286,23 +309,11 @@ pub fn parse_toml() -> BeerStyles {
             // Exit the program with exit code `1`.
             exit(1);
         }
-    };
+    }
+}
 
-    // Use a `match` block to return the
-    // file `contents` as a `Data struct: Ok(d)`
-    // or handle any `errors: Err(_)`.
-    let data: BeerStyles = match serde_json::from_str(&contents) {
-        // If successful, return data as `Data` struct.
-        // `d` is a local variable.
-        Ok(d) => d,
-        // Handle the `error` case.
-        Err(_) => {
-            // Write `msg` to `stderr`.
-            eprintln!("Unable to load data from `{filename}`");
-            // Exit the program with exit code `1`.
-            exit(1);
-        }
-    };
-
-    data
+// When compiling to web using trunk:
+#[cfg(target_arch = "wasm32")]
+pub fn fetch_json() -> String {
+    String::from_utf8_lossy(&include_bytes!("assets/beer_styles.json")[..]).to_string()
 }

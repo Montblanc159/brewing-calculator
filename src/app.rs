@@ -107,7 +107,7 @@ impl Default for BrewingCalcApp {
             post_mash_water_vol: 0.0,
             pre_ebullition_water_vol: 0.0,
             sparge_water_vol: 0.0,
-            bjcp_indexer: BJCPStyleIndex::new(bjcp_style_index::parse_toml()),
+            bjcp_indexer: BJCPStyleIndex::new(bjcp_style_index::parse_json()),
         }
     }
 }
