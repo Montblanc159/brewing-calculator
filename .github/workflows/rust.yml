@@ -146,17 +146,17 @@ jobs:
         cross build --verbose --release --target=${{ matrix.TARGET }}
 
     - name: Rename
-      run: cp target/${{ matrix.TARGET }}/release/brewing-calculator${{ matrix.EXTENSION }} brewing-calculator-${{ matrix.TARGET }}${{ matrix.EXTENSION }}
+      run: cp target/${{ matrix.TARGET }}/release/broutilles${{ matrix.EXTENSION }} broutilles-${{ matrix.TARGET }}${{ matrix.EXTENSION }}
 
     - uses: actions/upload-artifact@master
       with:
-        name: brewing-calculator-${{ matrix.TARGET }}${{ matrix.EXTENSION }}
-        path: brewing-calculator-${{ matrix.TARGET }}${{ matrix.EXTENSION }}
+        name: broutilles-${{ matrix.TARGET }}${{ matrix.EXTENSION }}
+        path: broutilles-${{ matrix.TARGET }}${{ matrix.EXTENSION }}
 
     - uses: svenstaro/upload-release-action@v2
       name: Upload binaries to release
       with:
         repo_token: ${{ secrets.GITHUB_TOKEN }}
-        file: brewing-calculator-${{ matrix.TARGET }}${{ matrix.EXTENSION }}
-        asset_name: brewing-calculator-${{ matrix.TARGET }}${{ matrix.EXTENSION }}
+        file: broutilles-${{ matrix.TARGET }}${{ matrix.EXTENSION }}
+        asset_name: broutilles-${{ matrix.TARGET }}${{ matrix.EXTENSION }}
         tag: ${{ github.ref }}
