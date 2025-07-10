@@ -1,9 +1,13 @@
 mod math;
+mod modules;
 
 use eframe::*;
 use egui::*;
 use math::*;
+use modules::bjcp_style_index::*;
 use serde::*;
+
+use crate::app::modules::bjcp_style_index;
 
 const DEFAULT_SPACING: f32 = 8.0;
 const ERROR_COLOR: Color32 = Color32::from_rgb(255, 70, 70);
@@ -77,6 +81,7 @@ pub struct BrewingCalcApp {
     post_mash_water_vol: f32,
     sparge_water_vol: f32,
     pre_ebullition_water_vol: f32,
+    bjcp_indexer: BJCPStyleIndex,
 }
 
 impl Default for BrewingCalcApp {
@@ -102,6 +107,7 @@ impl Default for BrewingCalcApp {
             post_mash_water_vol: 0.0,
             pre_ebullition_water_vol: 0.0,
             sparge_water_vol: 0.0,
+            bjcp_indexer: BJCPStyleIndex::new(bjcp_style_index::parse_toml()),
         }
     }
 }
@@ -152,6 +158,8 @@ impl App for BrewingCalcApp {
             });
         });
 
+        SidePanel::right("right_panel").show(ctx, |ui| self.bjcp_indexer.show(ui));
+
         // Add a lot of widgets here.
         CentralPanel::default().show(ctx, |ui| {
             ScrollArea::vertical().show(ui, |ui| {
@@ -180,7 +188,11 @@ impl App for BrewingCalcApp {
 
                 ui.add_space(DEFAULT_SPACING);
 
-                ui.label(format!("EBC : {}", self.ebc));
+                ui.label(format!(
+                    "EBC : {} ({} SRM)",
+                    self.ebc,
+                    convert_ebc_to_srm(self.ebc)
+                ));
 
                 ui.add_space(DEFAULT_SPACING);
 
@@ -212,7 +224,11 @@ impl App for BrewingCalcApp {
 
                 ui.add_space(DEFAULT_SPACING);
 
-                ui.label(format!("Densité finale (°P): {}", self.final_gravity));
+                ui.label(format!(
+                    "Densité finale (°P): {} ({} G)",
+                    self.final_gravity,
+                    convert_plato_to_sg(self.final_gravity)
+                ));
 
                 ui.add_space(DEFAULT_SPACING);
 

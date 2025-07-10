@@ -85,6 +85,30 @@ pub fn compute_ebc(total_mcu: f32) -> u8 {
     (2.939 * total_mcu.powf(0.6859)) as u8
 }
 
+/// https://www.brassageamateur.com/wiki/Unit%C3%A9_de_couleur_(EBC,_%C2%B0L,_SRM)
+///
+pub fn convert_ebc_to_srm(ebc: u8) -> f32 {
+    ebc as f32 * 0.508
+}
+
+// /// https://www.brassageamateur.com/wiki/Unit%C3%A9_de_couleur_(EBC,_%C2%B0L,_SRM)
+// ///
+// pub fn convert_srm_to_ebc(srm: f32) -> f32 {
+//     srm * 1.87
+// }
+
+// /// https://www.brassageamateur.com/wiki/Unit%C3%A9_de_couleur_(EBC,_%C2%B0L,_SRM)
+// ///
+// pub fn convert_ebc_to_lovibond(ebc: u8) -> f32 {
+//     (0.375 * ebc as f32) + 0.46
+// }
+
+// /// https://www.brassageamateur.com/wiki/Unit%C3%A9_de_couleur_(EBC,_%C2%B0L,_SRM)
+// ///
+// pub fn convert_lovibond_to_ebc(lovibond: f32) -> f32 {
+//     (lovibond - 0.46) / 0.375
+// }
+
 /// Subjective bitterness formula
 ///
 pub fn compute_bugu(ibu: f32, og: f32) -> f32 {

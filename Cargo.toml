@@ -1,10 +1,12 @@
 [package]
-name = "brewing-calculator"
-version = "0.1.0"
+name = "broutilles"
 authors = ["Guillaume Zaugg <guillaume.zaugg@gmail.com>"]
-edition = "2021"
 include = ["LICENSE-APACHE", "LICENSE-MIT", "**/*.rs", "Cargo.toml"]
+version = "0.1.0"
+edition = "2021"
 rust-version = "1.88"
+license = "MIT OR Apache-2.0"
+
 
 [package.metadata.docs.rs]
 all-features = true
@@ -24,6 +26,7 @@ log = "0.4.27"
 
 # You only need serde if you want app persistence:
 serde = { version = "1.0.219", features = ["derive"] }
+serde_json = "1.0"
 
 # native:
 [target.'cfg(not(target_arch = "wasm32"))'.dependencies]
@@ -33,6 +36,7 @@ env_logger = "0.11.8"
 [target.'cfg(target_arch = "wasm32")'.dependencies]
 wasm-bindgen-futures = "0.4.50"
 web-sys = "0.3.70"              # to access the DOM (to hide the loading text)
+
 
 [profile.release]
 opt-level = 2 # fast and small wasm
