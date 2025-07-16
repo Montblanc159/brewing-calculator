@@ -91,11 +91,11 @@ pub fn convert_ebc_to_srm(ebc: u8) -> f32 {
     ebc as f32 * 0.508
 }
 
-// /// https://www.brassageamateur.com/wiki/Unit%C3%A9_de_couleur_(EBC,_%C2%B0L,_SRM)
-// ///
-// pub fn convert_srm_to_ebc(srm: f32) -> f32 {
-//     srm * 1.87
-// }
+/// https://www.brassageamateur.com/wiki/Unit%C3%A9_de_couleur_(EBC,_%C2%B0L,_SRM)
+///
+pub fn convert_srm_to_ebc(srm: f32) -> f32 {
+    srm * 1.87
+}
 
 // /// https://www.brassageamateur.com/wiki/Unit%C3%A9_de_couleur_(EBC,_%C2%B0L,_SRM)
 // ///
@@ -122,9 +122,12 @@ pub fn convert_plato_to_sg(plato: f32) -> f32 {
     1.0 + (plato / (258.6 - ((plato / 258.2) * 227.1)))
 }
 
-// pub fn convert_sg_to_plato(sg: f32) -> f32 {
-//     (-1.0 * 616.868) + (1111.14 * sg) - (630.272 * sg.powf(2.0)) + (135.997 * sg.powf(3.0))
-// }
+/// Converts SG to °P
+/// https://www.brewersfriend.com/plato-to-sg-conversion-chart/
+///
+pub fn convert_sg_to_plato(sg: f32) -> f32 {
+    (-1.0 * 616.868) + (1111.14 * sg) - (630.272 * sg.powf(2.0)) + (135.997 * sg.powf(3.0))
+}
 
 /// Computes total cell count required for good fermentation start
 ///
@@ -221,3 +224,11 @@ pub fn compute_hop_weight(
 pub fn density_correction(density: f32) -> f32 {
     1.0 + (((density / 1000.0) - 1.050) / 2.0)
 }
+
+// /// CO2 pressure equilibrium
+// ///
+// pub fn compute_equilibrium_pressure(beer_temperature: f32, saturation_target: f32) -> f32 {
+//     0.000260165 * beer_temperature.powf(2.)
+//         + beer_temperature * (0.0109218 * saturation_target + 0.00799664)
+//         - 0.0012163 * (-278.507) * (saturation_target - 3.22065)
+// }

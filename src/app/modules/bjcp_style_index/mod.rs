@@ -1,3 +1,4 @@
+use crate::app::modules::math::{convert_sg_to_plato, convert_srm_to_ebc};
 use eframe::*;
 use egui::*;
 use serde::{Deserialize, Serialize};
@@ -120,153 +121,179 @@ fn search_styles(prompt: &str, styles: &[BeerStyle]) -> Vec<BeerStyle> {
 
 fn style_ui(style: &mut BeerStyle, ctx: &Context) {
     Window::new(&style.name)
-        .default_size([250., 400.])
+        .default_size([400., 400.])
         .open(&mut style.opened)
         .show(ctx, |ui| {
-            if let Some(number) = &style.number {
-                ui.label(format!("BJCP Number: {number}"));
-            };
-
-            ui.add_space(DEFAULT_SPACING);
-
-            if let Some(category) = &style.category {
-                ui.label(format!("Category: {category}"));
-            };
-
-            ui.add_space(DEFAULT_SPACING);
-
-            ui.horizontal(|ui| {
-                ui.label("IBU");
-
-                if let Some(ibu_min) = &style.ibumin {
-                    ui.label(ibu_min);
+            ScrollArea::vertical().id_salt(&style.name).show(ui, |ui| {
+                if let Some(number) = &style.number {
+                    ui.label(format!("BJCP Number: {number}"));
                 };
 
-                ui.label("-");
+                ui.add_space(DEFAULT_SPACING);
 
-                if let Some(ibu_max) = &style.ibumax {
-                    ui.label(ibu_max);
+                if let Some(category) = &style.category {
+                    ui.label(format!("Category: {category}"));
+                };
+
+                ui.add_space(DEFAULT_SPACING);
+
+                ui.horizontal(|ui| {
+                    ui.label("IBU");
+
+                    if let Some(ibu_min) = &style.ibumin {
+                        ui.label(ibu_min);
+                    };
+
+                    ui.label("-");
+
+                    if let Some(ibu_max) = &style.ibumax {
+                        ui.label(ibu_max);
+                    };
+                });
+
+                ui.horizontal(|ui| {
+                    ui.label("Original gravity");
+
+                    if let Some(og_min) = &style.ogmin {
+                        ui.label(og_min);
+
+                        if let Ok(og_min) = og_min.parse::<f32>() {
+                            ui.label(format!("({:.1} °P)", convert_sg_to_plato(og_min)));
+                        }
+                    };
+
+                    ui.label("-");
+
+                    if let Some(og_max) = &style.ogmax {
+                        ui.label(og_max);
+
+                        if let Ok(og_max) = og_max.parse::<f32>() {
+                            ui.label(format!("({:.1} °P)", convert_sg_to_plato(og_max)));
+                        }
+                    };
+                });
+
+                ui.horizontal(|ui| {
+                    ui.label("Final gravity");
+
+                    if let Some(fg_min) = &style.fgmin {
+                        ui.label(fg_min);
+
+                        if let Ok(fg_min) = fg_min.parse::<f32>() {
+                            ui.label(format!("({:.1} °P)", convert_sg_to_plato(fg_min)));
+                        }
+                    };
+
+                    ui.label("-");
+
+                    if let Some(fg_max) = &style.fgmax {
+                        ui.label(fg_max);
+
+                        if let Ok(fg_max) = fg_max.parse::<f32>() {
+                            ui.label(format!("({:.1} °P)", convert_sg_to_plato(fg_max)));
+                        }
+                    };
+                });
+
+                ui.horizontal(|ui| {
+                    ui.label("ABV");
+
+                    if let Some(abv_min) = &style.abvmin {
+                        ui.label(abv_min);
+                    };
+
+                    ui.label("-");
+
+                    if let Some(abv_max) = &style.abvmax {
+                        ui.label(abv_max);
+                    };
+                });
+
+                ui.horizontal(|ui| {
+                    ui.label("SRM");
+
+                    if let Some(srm_min) = &style.srmmin {
+                        ui.label(srm_min);
+
+                        if let Ok(srm_min) = srm_min.parse::<f32>() {
+                            ui.label(format!("({:.1} EBC)", convert_srm_to_ebc(srm_min)));
+                        }
+                    };
+
+                    ui.label("-");
+
+                    if let Some(srm_max) = &style.srmmax {
+                        ui.label(srm_max);
+
+                        if let Ok(srm_max) = srm_max.parse::<f32>() {
+                            ui.label(format!("({:.1} EBC)", convert_srm_to_ebc(srm_max)));
+                        }
+                    };
+                });
+
+                ui.add_space(DEFAULT_SPACING);
+
+                if let Some(overall_impression) = &style.overallimpression {
+                    ui.heading("Overall impression:");
+                    ui.label(overall_impression);
+                };
+
+                ui.add_space(DEFAULT_SPACING);
+
+                if let Some(appearance) = &style.appearance {
+                    ui.heading("Appearance:");
+                    ui.label(appearance);
+                };
+
+                ui.add_space(DEFAULT_SPACING);
+
+                if let Some(aroma) = &style.aroma {
+                    ui.heading("Aroma:");
+                    ui.label(aroma);
+                };
+
+                ui.add_space(DEFAULT_SPACING);
+
+                if let Some(flavor) = &style.flavor {
+                    ui.heading("Flavor:");
+                    ui.label(flavor);
+                };
+
+                ui.add_space(DEFAULT_SPACING);
+
+                if let Some(mouthfeel) = &style.mouthfeel {
+                    ui.heading("Mouthfeel:");
+                    ui.label(mouthfeel);
+                };
+
+                ui.add_space(DEFAULT_SPACING);
+
+                if let Some(history) = &style.history {
+                    ui.heading("History:");
+                    ui.label(history);
+                };
+
+                ui.add_space(DEFAULT_SPACING);
+
+                if let Some(characteristic_ingredients) = &style.characteristicingredients {
+                    ui.heading("Characteristic ingredients:");
+                    ui.label(characteristic_ingredients);
+                };
+
+                ui.add_space(DEFAULT_SPACING);
+
+                if let Some(style_comparison) = &style.stylecomparison {
+                    ui.heading("Style comparison:");
+                    ui.label(style_comparison);
+                };
+
+                ui.add_space(DEFAULT_SPACING);
+
+                if let Some(commercial_examples) = &style.commercialexamples {
+                    ui.heading("Commercial examples:");
+                    ui.label(commercial_examples);
                 };
             });
-
-            ui.horizontal(|ui| {
-                ui.label("Original gravity");
-
-                if let Some(og_min) = &style.ogmin {
-                    ui.label(og_min);
-                };
-
-                ui.label("-");
-
-                if let Some(og_max) = &style.ogmax {
-                    ui.label(og_max);
-                };
-            });
-
-            ui.horizontal(|ui| {
-                ui.label("Final gravity");
-
-                if let Some(fg_min) = &style.fgmin {
-                    ui.label(fg_min);
-                };
-
-                ui.label("-");
-
-                if let Some(fg_max) = &style.fgmax {
-                    ui.label(fg_max);
-                };
-            });
-
-            ui.horizontal(|ui| {
-                ui.label("ABV");
-
-                if let Some(abv_min) = &style.abvmin {
-                    ui.label(abv_min);
-                };
-
-                ui.label("-");
-
-                if let Some(abv_max) = &style.abvmax {
-                    ui.label(abv_max);
-                };
-            });
-
-            ui.horizontal(|ui| {
-                ui.label("SRM");
-
-                if let Some(srm_min) = &style.srmmin {
-                    ui.label(srm_min);
-                };
-
-                ui.label("-");
-
-                if let Some(srm_max) = &style.srmmax {
-                    ui.label(srm_max);
-                };
-            });
-
-            ui.add_space(DEFAULT_SPACING);
-
-            if let Some(overall_impression) = &style.overallimpression {
-                ui.heading("Overall impression:");
-                ui.label(overall_impression);
-            };
-
-            ui.add_space(DEFAULT_SPACING);
-
-            if let Some(appearance) = &style.appearance {
-                ui.heading("Appearance:");
-                ui.label(appearance);
-            };
-
-            ui.add_space(DEFAULT_SPACING);
-
-            if let Some(aroma) = &style.aroma {
-                ui.heading("Aroma:");
-                ui.label(aroma);
-            };
-
-            ui.add_space(DEFAULT_SPACING);
-
-            if let Some(flavor) = &style.flavor {
-                ui.heading("Flavor:");
-                ui.label(flavor);
-            };
-
-            ui.add_space(DEFAULT_SPACING);
-
-            if let Some(mouthfeel) = &style.mouthfeel {
-                ui.heading("Mouthfeel:");
-                ui.label(mouthfeel);
-            };
-
-            ui.add_space(DEFAULT_SPACING);
-
-            if let Some(history) = &style.history {
-                ui.heading("History:");
-                ui.label(history);
-            };
-
-            ui.add_space(DEFAULT_SPACING);
-
-            if let Some(characteristic_ingredients) = &style.characteristicingredients {
-                ui.heading("Characteristic ingredients:");
-                ui.label(characteristic_ingredients);
-            };
-
-            ui.add_space(DEFAULT_SPACING);
-
-            if let Some(style_comparison) = &style.stylecomparison {
-                ui.heading("Style comparison:");
-                ui.label(style_comparison);
-            };
-
-            ui.add_space(DEFAULT_SPACING);
-
-            if let Some(commercial_examples) = &style.commercialexamples {
-                ui.heading("Commercial examples:");
-                ui.label(commercial_examples);
-            };
         });
 }
 

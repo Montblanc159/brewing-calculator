@@ -1,13 +1,10 @@
-mod math;
 mod modules;
 
 use eframe::*;
 use egui::*;
-use math::*;
-use modules::bjcp_style_index::*;
+use modules::bjcp_style_index;
+use modules::math;
 use serde::*;
-
-use crate::app::modules::bjcp_style_index;
 
 const DEFAULT_SPACING: f32 = 8.0;
 const ERROR_COLOR: Color32 = Color32::from_rgb(255, 70, 70);
@@ -81,7 +78,7 @@ pub struct BrewingCalcApp {
     post_mash_water_vol: f32,
     sparge_water_vol: f32,
     pre_ebullition_water_vol: f32,
-    bjcp_indexer: BJCPStyleIndex,
+    bjcp_indexer: bjcp_style_index::BJCPStyleIndex,
 }
 
 impl Default for BrewingCalcApp {
@@ -107,7 +104,7 @@ impl Default for BrewingCalcApp {
             post_mash_water_vol: 0.0,
             pre_ebullition_water_vol: 0.0,
             sparge_water_vol: 0.0,
-            bjcp_indexer: BJCPStyleIndex::new(bjcp_style_index::parse_json()),
+            bjcp_indexer: bjcp_style_index::BJCPStyleIndex::new(bjcp_style_index::parse_json()),
         }
     }
 }
@@ -184,14 +181,14 @@ impl App for BrewingCalcApp {
 
                 ui.add_space(DEFAULT_SPACING);
 
-                ui.label(format!("Alcool (%) : {}", self.abv));
+                ui.label(format!("Alcool (%) : {:.1}", self.abv));
 
                 ui.add_space(DEFAULT_SPACING);
 
                 ui.label(format!(
-                    "EBC : {} ({} SRM)",
+                    "EBC : {} ({:.1} SRM)",
                     self.ebc,
-                    convert_ebc_to_srm(self.ebc)
+                    math::convert_ebc_to_srm(self.ebc)
                 ));
 
                 ui.add_space(DEFAULT_SPACING);
@@ -203,15 +200,15 @@ impl App for BrewingCalcApp {
 
                 ui.add_space(DEFAULT_SPACING);
 
-                ui.label(format!("BUGU : {}", self.bugu));
+                ui.label(format!("BUGU : {:.2}", self.bugu));
 
-                self.bugu = compute_bugu(self.ibu, self.original_gravity);
+                self.bugu = math::compute_bugu(self.ibu, self.original_gravity);
 
                 ui.add_space(DEFAULT_SPACING);
 
                 ui.label(format!(
                     "Required cell count : {}",
-                    compute_cell_count(self.original_gravity, self.batch_size)
+                    math::compute_cell_count(self.original_gravity, self.batch_size)
                 ));
 
                 ui.add_space(DEFAULT_SPACING);
@@ -219,15 +216,18 @@ impl App for BrewingCalcApp {
                 ui.horizontal(|ui| {
                     ui.label("Densité initiale (°P) : ");
                     ui.add(Slider::new(&mut self.original_gravity, 0.0..=25.0));
-                    ui.label(format!("{} G", convert_plato_to_sg(self.original_gravity)));
+                    ui.label(format!(
+                        "{:.3} SG",
+                        math::convert_plato_to_sg(self.original_gravity)
+                    ));
                 });
 
                 ui.add_space(DEFAULT_SPACING);
 
                 ui.label(format!(
-                    "Densité finale (°P): {} ({} G)",
+                    "Densité finale (°P): {:.1} ({:.3} SG)",
                     self.final_gravity,
-                    convert_plato_to_sg(self.final_gravity)
+                    math::convert_plato_to_sg(self.final_gravity)
                 ));
 
                 ui.add_space(DEFAULT_SPACING);
@@ -261,21 +261,21 @@ impl App for BrewingCalcApp {
                         ui.add_space(DEFAULT_SPACING);
 
                         ui.label(format!(
-                            "Volume d'eau à l'empatage (L): {}",
+                            "Volume d'eau à l'empatage (L): {:.3}",
                             self.mash_water_vol
                         ));
 
                         ui.add_space(DEFAULT_SPACING);
 
                         ui.label(format!(
-                            "Volume d'eau de rinçage (L): {}",
+                            "Volume d'eau de rinçage (L): {:.3}",
                             self.sparge_water_vol
                         ));
 
                         ui.add_space(DEFAULT_SPACING);
 
                         ui.label(format!(
-                            "Volume d'eau pré-ébullition (L): {}",
+                            "Volume d'eau pré-ébullition (L): {:.3}",
                             self.pre_ebullition_water_vol
                         ));
 
@@ -324,9 +324,9 @@ impl App for BrewingCalcApp {
                     .unwrap_or(0);
 
                 self.final_gravity =
-                    compute_final_gravity(self.original_gravity, max_attenuation as f32);
+                    math::compute_final_gravity(self.original_gravity, max_attenuation as f32);
 
-                self.abv = compute_abv(self.original_gravity, self.final_gravity);
+                self.abv = math::compute_abv(self.original_gravity, self.final_gravity);
 
                 ui.add_space(DEFAULT_SPACING);
 
@@ -350,15 +350,15 @@ impl App for BrewingCalcApp {
                 let mut ratios = vec![];
 
                 for fermentecible in &mut self.fermentecibles {
-                    let total_extract: f32 = compute_total_extract(self.original_gravity);
+                    let total_extract: f32 = math::compute_total_extract(self.original_gravity);
 
-                    let fermentecible_extractable = compute_per_malt_extractable(
+                    let fermentecible_extractable = math::compute_per_malt_extractable(
                         total_extract,
                         fermentecible.ratio,
                         self.efficiency,
                     );
 
-                    fermentecible.weight = compute_grain_bill(
+                    fermentecible.weight = math::compute_grain_bill(
                         self.batch_size,
                         fermentecible_extractable,
                         fermentecible.humidity,
@@ -366,14 +366,14 @@ impl App for BrewingCalcApp {
                     );
 
                     fermentecible.mcu =
-                        compute_mcu(fermentecible.ebc, fermentecible.weight, self.batch_size);
+                        math::compute_mcu(fermentecible.ebc, fermentecible.weight, self.batch_size);
 
                     ratios.push(fermentecible.ratio);
                     weights.push(fermentecible.weight);
                     mcus.push(fermentecible.mcu);
                 }
 
-                self.ebc = compute_ebc(mcus.iter().sum());
+                self.ebc = math::compute_ebc(mcus.iter().sum());
 
                 ScrollArea::horizontal()
                     .id_salt("second_scroll")
@@ -389,7 +389,7 @@ impl App for BrewingCalcApp {
                         });
                     });
 
-                if !self.fermentecibles.is_empty() && check_ratios(ratios) {
+                if !self.fermentecibles.is_empty() && math::check_ratios(ratios) {
                     ui.colored_label(
                         ERROR_COLOR,
                         "Problème de ratios : leur somme doit être égal à 100",
@@ -398,18 +398,18 @@ impl App for BrewingCalcApp {
                 }
 
                 self.mash_water_vol =
-                    compute_mash_water_vol(weights.iter().sum(), self.mash_water_ratio);
+                    math::compute_mash_water_vol(weights.iter().sum(), self.mash_water_ratio);
 
                 self.post_mash_water_vol =
-                    compute_post_mash_water_vol(self.mash_water_vol, weights.iter().sum());
+                    math::compute_post_mash_water_vol(self.mash_water_vol, weights.iter().sum());
 
-                self.sparge_water_vol = compute_sparge_water_vol(
+                self.sparge_water_vol = math::compute_sparge_water_vol(
                     self.batch_size,
                     self.evaporation_rate,
                     self.post_mash_water_vol,
                 );
 
-                self.pre_ebullition_water_vol = compute_pre_ebullition_water_vol(
+                self.pre_ebullition_water_vol = math::compute_pre_ebullition_water_vol(
                     self.sparge_water_vol,
                     self.post_mash_water_vol,
                 );
@@ -441,12 +441,12 @@ impl App for BrewingCalcApp {
                                     whirlpool_hop_ui(ui, self.batch_size, index, hop);
                                 });
 
-                                hop.utilization = compute_hop_utilization(
+                                hop.utilization = math::compute_hop_utilization(
                                     self.original_gravity,
                                     hop.addition_time,
                                 );
 
-                                hop.ibu = compute_ibu(
+                                hop.ibu = math::compute_ibu(
                                     hop.utilization,
                                     self.batch_size,
                                     hop.alpha_acids,
@@ -486,7 +486,7 @@ impl App for BrewingCalcApp {
                                     hop_ui(ui, index, hop);
                                 });
 
-                                hop.utilization = compute_hop_utilization(
+                                hop.utilization = math::compute_hop_utilization(
                                     self.original_gravity,
                                     hop.addition_time,
                                 );
@@ -498,7 +498,7 @@ impl App for BrewingCalcApp {
                                         .map(|w_hop| w_hop.ibu)
                                         .sum::<f32>();
 
-                                hop.weight = compute_hop_weight(
+                                hop.weight = math::compute_hop_weight(
                                     hop.utilization,
                                     self.batch_size,
                                     hop.alpha_acids,
@@ -507,7 +507,7 @@ impl App for BrewingCalcApp {
                                     hop.addition_temp,
                                 );
 
-                                hop.ibu = compute_ibu(
+                                hop.ibu = math::compute_ibu(
                                     hop.utilization,
                                     self.batch_size,
                                     hop.alpha_acids,
@@ -521,7 +521,7 @@ impl App for BrewingCalcApp {
                         });
                     });
 
-                if !self.hops.is_empty() && check_ratios(hop_ratios) {
+                if !self.hops.is_empty() && math::check_ratios(hop_ratios) {
                     ui.colored_label(
                         ERROR_COLOR,
                         "Problème de ratios : leur somme doit être égal à 100",
@@ -576,7 +576,7 @@ fn fermentecible_ui(ui: &mut Ui, index: usize, fermentecible: &mut Fermentecible
                     ui.label("Ratio (%)");
                     ui.add(Slider::new(&mut fermentecible.ratio, 0..=100));
                     ui.add_space(DEFAULT_SPACING);
-                    ui.label(format!("Poid : {} g", fermentecible.weight));
+                    ui.label(format!("Poid : {:.0} g", fermentecible.weight));
                 });
         });
 }
@@ -606,11 +606,11 @@ fn hop_ui(ui: &mut Ui, index: usize, hop: &mut Hop) {
                     ui.label("Ratio");
                     ui.add(Slider::new(&mut hop.ratio, 0..=100));
                     ui.add_space(DEFAULT_SPACING);
-                    ui.label(format!("Poids (g) : {}", hop.weight));
+                    ui.label(format!("Poids (g) : {:.2}", hop.weight));
                     ui.add_space(DEFAULT_SPACING);
-                    ui.label(format!("Utilisation : {}", hop.utilization));
+                    ui.label(format!("Utilisation : {:.2}", hop.utilization));
                     ui.add_space(DEFAULT_SPACING);
-                    ui.label(format!("Contribution IBU : {}", hop.ibu));
+                    ui.label(format!("Contribution IBU : {:.2}", hop.ibu));
                 });
         });
 }
@@ -632,16 +632,16 @@ fn whirlpool_hop_ui(ui: &mut Ui, batch_size: u16, index: usize, hop: &mut Whirlp
                     ui.label("Poids (g)");
                     ui.add(Slider::new(&mut hop.weight, 0.0..=10000.0));
                     ui.add_space(DEFAULT_SPACING);
-                    ui.label(format!("{} g/l", hop.weight / batch_size as f32));
+                    ui.label(format!("{:.2} g/l", hop.weight / batch_size as f32));
                     ui.add_space(DEFAULT_SPACING);
                     ui.label("Temps d'addition: Whirlpool");
                     ui.add_space(DEFAULT_SPACING);
                     ui.label("Température d'addition (°C)");
                     ui.add(Slider::new(&mut hop.addition_temp, 0.0..=100.0));
                     ui.add_space(DEFAULT_SPACING);
-                    ui.label(format!("Utilisation : {}", hop.utilization));
+                    ui.label(format!("Utilisation : {:.2}", hop.utilization));
                     ui.add_space(DEFAULT_SPACING);
-                    ui.label(format!("Contribution IBU : {}", hop.ibu));
+                    ui.label(format!("Contribution IBU : {:.2}", hop.ibu));
                 });
         });
 }
