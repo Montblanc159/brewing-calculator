@@ -1,4 +1,6 @@
 use crate::app::modules::math::{convert_sg_to_plato, convert_srm_to_ebc};
+use crate::app::modules::ui_defaults::*;
+
 use eframe::*;
 use egui::*;
 use serde::{Deserialize, Serialize};
@@ -7,8 +9,6 @@ use serde_json;
 #[cfg(not(target_arch = "wasm32"))]
 use std::fs;
 use std::process::exit;
-
-const DEFAULT_SPACING: f32 = 8.0;
 
 #[derive(Deserialize, Serialize)]
 #[serde(default)]

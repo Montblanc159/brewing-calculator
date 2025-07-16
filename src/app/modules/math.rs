@@ -225,10 +225,11 @@ pub fn density_correction(density: f32) -> f32 {
     1.0 + (((density / 1000.0) - 1.050) / 2.0)
 }
 
-// /// CO2 pressure equilibrium
-// ///
-// pub fn compute_equilibrium_pressure(beer_temperature: f32, saturation_target: f32) -> f32 {
-//     0.000260165 * beer_temperature.powf(2.)
-//         + beer_temperature * (0.0109218 * saturation_target + 0.00799664)
-//         - 0.0012163 * (-278.507) * (saturation_target - 3.22065)
-// }
+/// CO2 pressure equilibrium
+/// https://www.brassageamateur.com/wiki/Formules#Pression_d.27.C3.A9quilibre_.2F_Volume_CO2
+///
+pub fn compute_equilibrium_pressure(beer_temperature: f32, saturation_target: f32) -> f32 {
+    0.000260165 * beer_temperature.powf(2.)
+        + beer_temperature * (0.0109218 * saturation_target + 0.00799664)
+        - 0.0012163 * (saturation_target - 278.507) * (saturation_target - 3.22065)
+}

@@ -4,13 +4,10 @@ use eframe::*;
 use egui::*;
 use modules::bjcp_style_index;
 use modules::math;
+use modules::ui_defaults::*;
 use serde::*;
 
-const DEFAULT_SPACING: f32 = 8.0;
-const ERROR_COLOR: Color32 = Color32::from_rgb(255, 70, 70);
-const LIGHTER_COLOR: Color32 = Color32::from_rgb(40, 40, 40);
-const DEFAULT_CORNER_RADIUS: CornerRadius = CornerRadius::same(15);
-const DEFAULT_PADDING: Margin = Margin::same(15);
+use crate::app::modules::equilibrium_pressure;
 
 #[derive(Deserialize, Serialize, Default)]
 struct Fermentecible {
@@ -79,6 +76,7 @@ pub struct BrewingCalcApp {
     sparge_water_vol: f32,
     pre_ebullition_water_vol: f32,
     bjcp_indexer: bjcp_style_index::BJCPStyleIndex,
+    equilibrium_pressure: equilibrium_pressure::EquilibriumPressure,
 }
 
 impl Default for BrewingCalcApp {
@@ -105,6 +103,7 @@ impl Default for BrewingCalcApp {
             pre_ebullition_water_vol: 0.0,
             sparge_water_vol: 0.0,
             bjcp_indexer: bjcp_style_index::BJCPStyleIndex::new(bjcp_style_index::parse_json()),
+            equilibrium_pressure: equilibrium_pressure::EquilibriumPressure::new(),
         }
     }
 }
@@ -156,6 +155,11 @@ impl App for BrewingCalcApp {
         });
 
         SidePanel::right("right_panel").show(ctx, |ui| self.bjcp_indexer.show(ui));
+        SidePanel::left("left_panel").show(ctx, |ui| {
+            ui.heading("Outils");
+
+            self.equilibrium_pressure.show(ui)
+        });
 
         // Add a lot of widgets here.
         CentralPanel::default().show(ctx, |ui| {
