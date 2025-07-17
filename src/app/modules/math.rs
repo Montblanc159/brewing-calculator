@@ -126,7 +126,7 @@ pub fn convert_plato_to_sg(plato: f32) -> f32 {
 /// https://www.brewersfriend.com/plato-to-sg-conversion-chart/
 ///
 pub fn convert_sg_to_plato(sg: f32) -> f32 {
-    (-1.0 * 616.868) + (1111.14 * sg) - (630.272 * sg.powf(2.0)) + (135.997 * sg.powf(3.0))
+    -616.868 + (1111.14 * sg) - (630.272 * sg.powf(2.0)) + (135.997 * sg.powf(3.0))
 }
 
 /// Computes total cell count required for good fermentation start
