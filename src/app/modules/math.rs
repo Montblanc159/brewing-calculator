@@ -233,3 +233,10 @@ pub fn compute_equilibrium_pressure(beer_temperature: f32, saturation_target: f3
         + beer_temperature * (0.0109218 * saturation_target + 0.00799664)
         - 0.0012163 * (saturation_target - 278.507) * (saturation_target - 3.22065)
 }
+
+/// Computes temperature after mixing two volumes at different temperatures
+/// https://fr.quora.com/Comment-calculer-la-temp%C3%A9rature-finale-du-m%C3%A9lange-de-deux-volumes-deau-%C3%A0-des-temp%C3%A9ratures-diff%C3%A9rentes
+///
+pub fn compute_temperature_after_mix(temp_a: f32, vol_a: f32, temp_b: f32, vol_b: f32) -> f32 {
+    (temp_a * vol_a + temp_b * vol_b) / (vol_a + vol_b)
+}

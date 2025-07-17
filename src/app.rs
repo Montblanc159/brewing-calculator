@@ -3,11 +3,11 @@ mod modules;
 use eframe::*;
 use egui::*;
 use modules::bjcp_style_index;
+use modules::equilibrium_pressure;
 use modules::math;
+use modules::temperature_after_mix;
 use modules::ui_defaults::*;
 use serde::*;
-
-use crate::app::modules::equilibrium_pressure;
 
 #[derive(Deserialize, Serialize, Default)]
 struct Fermentecible {
@@ -25,6 +25,7 @@ struct Ferment {
     name: String,
     attenuation: u8,
     pitch_rate: f32,
+    cells_per_gram: u32,
 }
 
 #[derive(Deserialize, Serialize, Default)]
@@ -61,6 +62,7 @@ pub struct BrewingCalcApp {
     ebc: u8,
     ibu: f32,
     bugu: f32,
+    cell_count: u64,
     original_gravity: f32,
     final_gravity: f32,
     efficiency: u8,
@@ -77,6 +79,7 @@ pub struct BrewingCalcApp {
     pre_ebullition_water_vol: f32,
     bjcp_indexer: bjcp_style_index::BJCPStyleIndex,
     equilibrium_pressure: equilibrium_pressure::EquilibriumPressure,
+    temperature_after_mix: temperature_after_mix::TemperatureAfterMix,
 }
 
 impl Default for BrewingCalcApp {
@@ -88,6 +91,7 @@ impl Default for BrewingCalcApp {
             ebc: 5,
             ibu: 10.0,
             bugu: 0.0,
+            cell_count: 0,
             original_gravity: 12.0,
             final_gravity: 2.0,
             efficiency: 80,
@@ -104,6 +108,7 @@ impl Default for BrewingCalcApp {
             sparge_water_vol: 0.0,
             bjcp_indexer: bjcp_style_index::BJCPStyleIndex::new(bjcp_style_index::parse_json()),
             equilibrium_pressure: equilibrium_pressure::EquilibriumPressure::new(),
+            temperature_after_mix: temperature_after_mix::TemperatureAfterMix::new(),
         }
     }
 }
@@ -158,7 +163,8 @@ impl App for BrewingCalcApp {
         SidePanel::left("left_panel").show(ctx, |ui| {
             ui.heading("Outils");
 
-            self.equilibrium_pressure.show(ui)
+            self.equilibrium_pressure.show(ui);
+            self.temperature_after_mix.show(ui);
         });
 
         // Add a lot of widgets here.
@@ -210,10 +216,10 @@ impl App for BrewingCalcApp {
 
                 ui.add_space(DEFAULT_SPACING);
 
-                ui.label(format!(
-                    "Required cell count : {}",
-                    math::compute_cell_count(self.original_gravity, self.batch_size)
-                ));
+                self.cell_count =
+                    math::compute_cell_count(self.original_gravity, self.batch_size) as u64;
+
+                ui.label(format!("Required cell count : {}", self.cell_count));
 
                 ui.add_space(DEFAULT_SPACING);
 
@@ -550,6 +556,9 @@ fn ferment_ui(ui: &mut Ui, index: usize, ferment: &mut Ferment) {
                     ui.add_space(DEFAULT_SPACING);
                     ui.label("Atténuation (%)");
                     ui.add(Slider::new(&mut ferment.attenuation, 0..=100));
+                    ui.add_space(DEFAULT_SPACING);
+                    ui.label("Cellules par gramme (millions)");
+                    ui.add(Slider::new(&mut ferment.cells_per_gram, 0..=10_000));
                     ui.add_space(DEFAULT_SPACING);
                     ui.label("Taux d'ensemencement (g/L)");
                     ui.add(Slider::new(&mut ferment.pitch_rate, 0.0..=30.0));
