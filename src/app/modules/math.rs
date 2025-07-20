@@ -135,6 +135,10 @@ pub fn compute_cell_count(og: f32, batch_size: u16) -> f32 {
     1_000_000.0 * (batch_size as f32 * 1000.0) * og
 }
 
+pub fn compute_pitch_weight(cell_count: u64, cells_per_gram: u32, ratio: u8) -> f64 {
+    (cell_count as f64 * (ratio as f64 / 100.)) / (cells_per_gram) as f64 / 1_000_000.
+}
+
 /// Hop utilization is caculated using Glenn Tinseth's formula
 /// http://univers-biere.net/amertume.php
 /// https://www.backtoschoolbrewing.com/blog/2016/9/5/how-to-calculate-ibus

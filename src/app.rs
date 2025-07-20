@@ -7,7 +7,10 @@ use modules::equilibrium_pressure;
 use modules::math;
 use modules::temperature_after_mix;
 use modules::ui_defaults::*;
+use modules::yeast;
 use serde::*;
+
+use crate::app::modules::AppModule;
 
 #[derive(Deserialize, Serialize, Default)]
 struct Fermentecible {
@@ -62,7 +65,6 @@ pub struct BrewingCalcApp {
     ebc: u8,
     ibu: f32,
     bugu: f32,
-    cell_count: u64,
     original_gravity: f32,
     final_gravity: f32,
     efficiency: u8,
@@ -72,7 +74,6 @@ pub struct BrewingCalcApp {
     hops: Vec<Hop>,
     whirlpool_hops: Vec<WhirlpoolHop>,
     fermentecibles: Vec<Fermentecible>,
-    ferments: Vec<Ferment>,
     mash_water_vol: f32,
     post_mash_water_vol: f32,
     sparge_water_vol: f32,
@@ -80,6 +81,7 @@ pub struct BrewingCalcApp {
     bjcp_indexer: bjcp_style_index::BJCPStyleIndex,
     equilibrium_pressure: equilibrium_pressure::EquilibriumPressure,
     temperature_after_mix: temperature_after_mix::TemperatureAfterMix,
+    yeast: yeast::Yeast,
 }
 
 impl Default for BrewingCalcApp {
@@ -91,7 +93,6 @@ impl Default for BrewingCalcApp {
             ebc: 5,
             ibu: 10.0,
             bugu: 0.0,
-            cell_count: 0,
             original_gravity: 12.0,
             final_gravity: 2.0,
             efficiency: 80,
@@ -101,7 +102,6 @@ impl Default for BrewingCalcApp {
             hops: vec![],
             whirlpool_hops: vec![],
             fermentecibles: vec![],
-            ferments: vec![],
             mash_water_vol: 0.0,
             post_mash_water_vol: 0.0,
             pre_ebullition_water_vol: 0.0,
@@ -109,6 +109,7 @@ impl Default for BrewingCalcApp {
             bjcp_indexer: bjcp_style_index::BJCPStyleIndex::new(bjcp_style_index::parse_json()),
             equilibrium_pressure: equilibrium_pressure::EquilibriumPressure::new(),
             temperature_after_mix: temperature_after_mix::TemperatureAfterMix::new(),
+            yeast: yeast::Yeast::new(),
         }
     }
 }
@@ -216,13 +217,6 @@ impl App for BrewingCalcApp {
 
                 ui.add_space(DEFAULT_SPACING);
 
-                self.cell_count =
-                    math::compute_cell_count(self.original_gravity, self.batch_size) as u64;
-
-                ui.label(format!("Required cell count : {}", self.cell_count));
-
-                ui.add_space(DEFAULT_SPACING);
-
                 ui.horizontal(|ui| {
                     ui.label("Densité initiale (°P) : ");
                     ui.add(Slider::new(&mut self.original_gravity, 0.0..=25.0));
@@ -298,43 +292,15 @@ impl App for BrewingCalcApp {
                     });
                 ui.add_space(DEFAULT_SPACING);
 
-                ui.horizontal(|ui| {
-                    ui.heading("Ferments");
-                    if ui.button("+").clicked() {
-                        self.ferments.push(Ferment {
-                            ..Default::default()
-                        });
-                    };
+                self.yeast.cell_count =
+                    math::compute_cell_count(self.original_gravity, self.batch_size) as u64;
 
-                    if ui.button("-").clicked() {
-                        self.ferments.pop();
-                    };
-                });
+                self.yeast.show(ui);
 
-                ui.add_space(DEFAULT_SPACING);
-
-                ScrollArea::horizontal()
-                    .id_salt("first_scroll")
-                    .show(ui, |ui| {
-                        ui.horizontal(|ui| {
-                            for (index, ferment) in &mut self.ferments.iter_mut().enumerate() {
-                                ui.vertical(|ui| {
-                                    ferment_ui(ui, index, ferment);
-                                });
-                            }
-                        });
-                    });
-
-                // This is an arbitrary choice to handle cofermentations, has to be enhanced
-                let max_attenuation = self
-                    .ferments
-                    .iter()
-                    .map(|ferment| ferment.attenuation)
-                    .max()
-                    .unwrap_or(0);
-
-                self.final_gravity =
-                    math::compute_final_gravity(self.original_gravity, max_attenuation as f32);
+                self.final_gravity = math::compute_final_gravity(
+                    self.original_gravity,
+                    self.yeast.max_attenuation as f32,
+                );
 
                 self.abv = math::compute_abv(self.original_gravity, self.final_gravity);
 
@@ -541,29 +507,6 @@ impl App for BrewingCalcApp {
             });
         });
     }
-}
-
-fn ferment_ui(ui: &mut Ui, index: usize, ferment: &mut Ferment) {
-    Window::new(format!("Ferment {}", index + 1))
-        .default_size([250., 250.])
-        .show(ui.ctx(), |ui| {
-            egui::Frame::new()
-                .fill(LIGHTER_COLOR)
-                .inner_margin(DEFAULT_PADDING)
-                .corner_radius(DEFAULT_CORNER_RADIUS)
-                .show(ui, |ui| {
-                    ui.text_edit_singleline(&mut ferment.name);
-                    ui.add_space(DEFAULT_SPACING);
-                    ui.label("Atténuation (%)");
-                    ui.add(Slider::new(&mut ferment.attenuation, 0..=100));
-                    ui.add_space(DEFAULT_SPACING);
-                    ui.label("Cellules par gramme (millions)");
-                    ui.add(Slider::new(&mut ferment.cells_per_gram, 0..=10_000));
-                    ui.add_space(DEFAULT_SPACING);
-                    ui.label("Taux d'ensemencement (g/L)");
-                    ui.add(Slider::new(&mut ferment.pitch_rate, 0.0..=30.0));
-                });
-        });
 }
 
 fn fermentecible_ui(ui: &mut Ui, index: usize, fermentecible: &mut Fermentecible) {
