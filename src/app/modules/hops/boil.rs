@@ -5,25 +5,26 @@ use egui::*;
 use serde::{Deserialize, Serialize};
 
 #[derive(Deserialize, Serialize, Default)]
-struct WhirlpoolHop {
+struct BoilHop {
     name: String,
     alpha_acids: f32,
     addition_time: u8,
-    weight: f32,
     utilization: f32,
+    weight: f32,
     ibu: f32,
+    ratio: u8,
     addition_temp: f32,
 }
 
 #[derive(Deserialize, Serialize, Default)]
-pub struct WhirlpoolHops {
-    hops: Vec<WhirlpoolHop>,
-    pub total_ibu: f32,
-    pub original_gravity: f32,
+pub struct BoilHops {
+    hops: Vec<BoilHop>,
+    pub target_ibu: f32,
     pub batch_size: u16,
+    pub original_gravity: f32,
 }
 
-impl super::super::AppModule for WhirlpoolHops {
+impl super::super::AppModule for BoilHops {
     fn new() -> Self {
         Self {
             ..Default::default()
@@ -32,10 +33,10 @@ impl super::super::AppModule for WhirlpoolHops {
 
     fn show(&mut self, ui: &mut Ui) {
         ui.horizontal(|ui| {
-            ui.heading("Houblons au whirlpool");
+            ui.heading("Houblons");
             if ui.button("+").clicked() {
-                self.hops.push(WhirlpoolHop {
-                    addition_time: 0,
+                self.hops.push(BoilHop {
+                    addition_temp: 100.0,
                     ..Default::default()
                 })
             };
@@ -47,19 +48,28 @@ impl super::super::AppModule for WhirlpoolHops {
 
         ui.add_space(DEFAULT_SPACING);
 
-        let mut total_ibu = 0.;
+        let mut hop_ratios = vec![];
 
         ScrollArea::horizontal()
-            .id_salt("third_scroll")
+            .id_salt("fourth_scroll")
             .show(ui, |ui| {
                 ui.horizontal(|ui| {
                     for (index, hop) in &mut self.hops.iter_mut().enumerate() {
                         ui.vertical(|ui| {
-                            whirlpool_hop_ui(ui, self.batch_size, index, hop);
+                            boil_hop_ui(ui, index, hop);
                         });
 
                         hop.utilization =
                             math::compute_hop_utilization(self.original_gravity, hop.addition_time);
+
+                        hop.weight = math::compute_hop_weight(
+                            hop.utilization,
+                            self.batch_size,
+                            hop.alpha_acids,
+                            self.target_ibu * (hop.ratio as f32 / 100.0),
+                            self.original_gravity,
+                            hop.addition_temp,
+                        );
 
                         hop.ibu = math::compute_ibu(
                             hop.utilization,
@@ -70,17 +80,23 @@ impl super::super::AppModule for WhirlpoolHops {
                             hop.addition_temp,
                         );
 
-                        total_ibu += hop.ibu;
+                        hop_ratios.push(hop.ratio)
                     }
                 });
             });
 
-        self.total_ibu = total_ibu;
+        if !self.hops.is_empty() && math::check_ratios(hop_ratios) {
+            ui.colored_label(
+                ERROR_COLOR,
+                "Problème de ratios : leur somme doit être égal à 100",
+            );
+            ui.add_space(DEFAULT_SPACING);
+        }
     }
 }
 
-fn whirlpool_hop_ui(ui: &mut Ui, batch_size: u16, index: usize, hop: &mut WhirlpoolHop) {
-    Window::new(format!("Houblon au W {}", index + 1))
+fn boil_hop_ui(ui: &mut Ui, index: usize, hop: &mut BoilHop) {
+    Window::new(format!("Houblon {}", index + 1))
         .default_size([250., 250.])
         .show(ui.ctx(), |ui| {
             egui::Frame::new()
@@ -93,15 +109,18 @@ fn whirlpool_hop_ui(ui: &mut Ui, batch_size: u16, index: usize, hop: &mut Whirlp
                     ui.label("Acide alpha (%)");
                     ui.add(Slider::new(&mut hop.alpha_acids, 0.0..=100.0));
                     ui.add_space(DEFAULT_SPACING);
-                    ui.label("Poids (g)");
-                    ui.add(Slider::new(&mut hop.weight, 0.0..=10000.0));
+                    ui.label("Temps d'addition");
+                    ui.add(Slider::new(&mut hop.addition_time, 0..=60));
                     ui.add_space(DEFAULT_SPACING);
-                    ui.label(format!("{:.2} g/l", hop.weight / batch_size as f32));
+                    ui.label(format!(
+                        "Température d'addition (°C) : {}",
+                        hop.addition_temp
+                    ));
                     ui.add_space(DEFAULT_SPACING);
-                    ui.label("Temps d'addition: Whirlpool");
+                    ui.label("Ratio");
+                    ui.add(Slider::new(&mut hop.ratio, 0..=100));
                     ui.add_space(DEFAULT_SPACING);
-                    ui.label("Température d'addition (°C)");
-                    ui.add(Slider::new(&mut hop.addition_temp, 0.0..=100.0));
+                    ui.label(format!("Poids (g) : {:.2}", hop.weight));
                     ui.add_space(DEFAULT_SPACING);
                     ui.label(format!("Utilisation : {:.2}", hop.utilization));
                     ui.add_space(DEFAULT_SPACING);

@@ -4,6 +4,7 @@ pub mod base;
 pub mod bjcp_style_index;
 pub mod equilibrium_pressure;
 pub mod fermentecibles;
+pub mod hops;
 pub mod math;
 pub mod temperature_after_mix;
 pub mod ui_defaults;

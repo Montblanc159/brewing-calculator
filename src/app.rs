@@ -6,7 +6,7 @@ use modules::base;
 use modules::bjcp_style_index;
 use modules::equilibrium_pressure;
 use modules::fermentecibles;
-use modules::math;
+use modules::hops;
 use modules::temperature_after_mix;
 use modules::ui_defaults::*;
 use modules::water;
@@ -62,8 +62,6 @@ struct WhirlpoolHop {
 #[serde(default)] // if we add new fields, give them default values when deserializing old state
 pub struct BrewingCalcApp {
     // #[serde(skip)] // This how you opt-out of serialization of a field
-    hops: Vec<Hop>,
-    whirlpool_hops: Vec<WhirlpoolHop>,
     base: base::Base,
     bjcp_indexer: bjcp_style_index::BJCPStyleIndex,
     equilibrium_pressure: equilibrium_pressure::EquilibriumPressure,
@@ -71,13 +69,12 @@ pub struct BrewingCalcApp {
     yeast: yeast::Yeast,
     fermentecibles: fermentecibles::Fermentecibles,
     water: water::Water,
+    hops: hops::Hops,
 }
 
 impl Default for BrewingCalcApp {
     fn default() -> Self {
         Self {
-            hops: vec![],
-            whirlpool_hops: vec![],
             base: base::Base::new(),
             bjcp_indexer: bjcp_style_index::BJCPStyleIndex::new(bjcp_style_index::parse_json()),
             equilibrium_pressure: equilibrium_pressure::EquilibriumPressure::new(),
@@ -85,6 +82,7 @@ impl Default for BrewingCalcApp {
             yeast: yeast::Yeast::new(),
             fermentecibles: fermentecibles::Fermentecibles::new(),
             water: water::Water::new(),
+            hops: hops::Hops::new(),
         }
     }
 }
@@ -172,6 +170,8 @@ impl App for BrewingCalcApp {
 
                 self.yeast.show(ui);
 
+                ui.add_space(DEFAULT_SPACING);
+
                 self.fermentecibles.batch_size = self.base.batch_size;
                 self.fermentecibles.original_gravity = self.base.original_gravity;
                 self.fermentecibles.efficiency = self.base.efficiency;
@@ -180,184 +180,11 @@ impl App for BrewingCalcApp {
 
                 ui.add_space(DEFAULT_SPACING);
 
-                ui.horizontal(|ui| {
-                    ui.heading("Houblons au whirlpool");
-                    if ui.button("+").clicked() {
-                        self.whirlpool_hops.push(WhirlpoolHop {
-                            addition_time: 0,
-                            ..Default::default()
-                        })
-                    };
-
-                    if ui.button("-").clicked() {
-                        self.whirlpool_hops.pop();
-                    };
-                });
-
-                ui.add_space(DEFAULT_SPACING);
-
-                ScrollArea::horizontal()
-                    .id_salt("third_scroll")
-                    .show(ui, |ui| {
-                        ui.horizontal(|ui| {
-                            for (index, hop) in &mut self.whirlpool_hops.iter_mut().enumerate() {
-                                ui.vertical(|ui| {
-                                    whirlpool_hop_ui(ui, self.base.batch_size, index, hop);
-                                });
-
-                                hop.utilization = math::compute_hop_utilization(
-                                    self.base.original_gravity,
-                                    hop.addition_time,
-                                );
-
-                                hop.ibu = math::compute_ibu(
-                                    hop.utilization,
-                                    self.base.batch_size,
-                                    hop.alpha_acids,
-                                    hop.weight,
-                                    self.base.original_gravity,
-                                    hop.addition_temp,
-                                );
-                            }
-                        });
-                    });
-
-                ui.add_space(DEFAULT_SPACING);
-
-                ui.horizontal(|ui| {
-                    ui.heading("Houblons");
-                    if ui.button("+").clicked() {
-                        self.hops.push(Hop {
-                            addition_temp: 100.0,
-                            ..Default::default()
-                        })
-                    };
-
-                    if ui.button("-").clicked() {
-                        self.hops.pop();
-                    };
-                });
-
-                ui.add_space(DEFAULT_SPACING);
-
-                let mut hop_ratios = vec![];
-                ScrollArea::horizontal()
-                    .id_salt("fourth_scroll")
-                    .show(ui, |ui| {
-                        ui.horizontal(|ui| {
-                            for (index, hop) in &mut self.hops.iter_mut().enumerate() {
-                                ui.vertical(|ui| {
-                                    hop_ui(ui, index, hop);
-                                });
-
-                                hop.utilization = math::compute_hop_utilization(
-                                    self.base.original_gravity,
-                                    hop.addition_time,
-                                );
-
-                                let ibu_left = self.base.ibu
-                                    - self
-                                        .whirlpool_hops
-                                        .iter()
-                                        .map(|w_hop| w_hop.ibu)
-                                        .sum::<f32>();
-
-                                hop.weight = math::compute_hop_weight(
-                                    hop.utilization,
-                                    self.base.batch_size,
-                                    hop.alpha_acids,
-                                    ibu_left * (hop.ratio as f32 / 100.0),
-                                    self.base.original_gravity,
-                                    hop.addition_temp,
-                                );
-
-                                hop.ibu = math::compute_ibu(
-                                    hop.utilization,
-                                    self.base.batch_size,
-                                    hop.alpha_acids,
-                                    hop.weight,
-                                    self.base.original_gravity,
-                                    hop.addition_temp,
-                                );
-
-                                hop_ratios.push(hop.ratio)
-                            }
-                        });
-                    });
-
-                if !self.hops.is_empty() && math::check_ratios(hop_ratios) {
-                    ui.colored_label(
-                        ERROR_COLOR,
-                        "Problème de ratios : leur somme doit être égal à 100",
-                    );
-                    ui.add_space(DEFAULT_SPACING);
-                }
+                self.hops.original_gravity = self.base.original_gravity;
+                self.hops.batch_size = self.base.batch_size;
+                self.hops.ibu = self.base.ibu;
+                self.hops.show(ui);
             });
         });
     }
-}
-
-fn hop_ui(ui: &mut Ui, index: usize, hop: &mut Hop) {
-    Window::new(format!("Houblon {}", index + 1))
-        .default_size([250., 250.])
-        .show(ui.ctx(), |ui| {
-            egui::Frame::new()
-                .fill(LIGHTER_COLOR)
-                .inner_margin(DEFAULT_PADDING)
-                .corner_radius(DEFAULT_CORNER_RADIUS)
-                .show(ui, |ui| {
-                    ui.text_edit_singleline(&mut hop.name);
-                    ui.add_space(DEFAULT_SPACING);
-                    ui.label("Acide alpha (%)");
-                    ui.add(Slider::new(&mut hop.alpha_acids, 0.0..=100.0));
-                    ui.add_space(DEFAULT_SPACING);
-                    ui.label("Temps d'addition");
-                    ui.add(Slider::new(&mut hop.addition_time, 0..=60));
-                    ui.add_space(DEFAULT_SPACING);
-                    ui.label(format!(
-                        "Température d'addition (°C) : {}",
-                        hop.addition_temp
-                    ));
-                    ui.add_space(DEFAULT_SPACING);
-                    ui.label("Ratio");
-                    ui.add(Slider::new(&mut hop.ratio, 0..=100));
-                    ui.add_space(DEFAULT_SPACING);
-                    ui.label(format!("Poids (g) : {:.2}", hop.weight));
-                    ui.add_space(DEFAULT_SPACING);
-                    ui.label(format!("Utilisation : {:.2}", hop.utilization));
-                    ui.add_space(DEFAULT_SPACING);
-                    ui.label(format!("Contribution IBU : {:.2}", hop.ibu));
-                });
-        });
-}
-
-fn whirlpool_hop_ui(ui: &mut Ui, batch_size: u16, index: usize, hop: &mut WhirlpoolHop) {
-    Window::new(format!("Houblon au W {}", index + 1))
-        .default_size([250., 250.])
-        .show(ui.ctx(), |ui| {
-            egui::Frame::new()
-                .fill(LIGHTER_COLOR)
-                .inner_margin(DEFAULT_PADDING)
-                .corner_radius(DEFAULT_CORNER_RADIUS)
-                .show(ui, |ui| {
-                    ui.text_edit_singleline(&mut hop.name);
-                    ui.add_space(DEFAULT_SPACING);
-                    ui.label("Acide alpha (%)");
-                    ui.add(Slider::new(&mut hop.alpha_acids, 0.0..=100.0));
-                    ui.add_space(DEFAULT_SPACING);
-                    ui.label("Poids (g)");
-                    ui.add(Slider::new(&mut hop.weight, 0.0..=10000.0));
-                    ui.add_space(DEFAULT_SPACING);
-                    ui.label(format!("{:.2} g/l", hop.weight / batch_size as f32));
-                    ui.add_space(DEFAULT_SPACING);
-                    ui.label("Temps d'addition: Whirlpool");
-                    ui.add_space(DEFAULT_SPACING);
-                    ui.label("Température d'addition (°C)");
-                    ui.add(Slider::new(&mut hop.addition_temp, 0.0..=100.0));
-                    ui.add_space(DEFAULT_SPACING);
-                    ui.label(format!("Utilisation : {:.2}", hop.utilization));
-                    ui.add_space(DEFAULT_SPACING);
-                    ui.label(format!("Contribution IBU : {:.2}", hop.ibu));
-                });
-        });
 }
