@@ -1,4 +1,4 @@
-use crate::app::modules::math::{check_ratios, compute_pitch_weight};
+use crate::app::modules::math;
 use crate::app::modules::ui_defaults::*;
 use eframe::*;
 use egui::*;
@@ -15,7 +15,9 @@ struct Ferment {
 
 #[derive(Deserialize, Serialize, Default)]
 pub struct Yeast {
-    pub cell_count: u64,
+    pub batch_size: u16,
+    pub original_gravity: f32,
+    cell_count: u64,
     ferments: Vec<Ferment>,
     pub max_attenuation: u8,
 }
@@ -28,6 +30,8 @@ impl super::AppModule for Yeast {
     }
 
     fn show(&mut self, ui: &mut Ui) {
+        self.cell_count = math::compute_cell_count(self.original_gravity, self.batch_size) as u64;
+
         ui.horizontal(|ui| {
             ui.heading("Ferments");
 
@@ -52,7 +56,7 @@ impl super::AppModule for Yeast {
             ferment_ui(ui, index, ferment);
 
             ferment.pitch_weight =
-                compute_pitch_weight(self.cell_count, ferment.cells_per_gram, ferment.ratio);
+                math::compute_pitch_weight(self.cell_count, ferment.cells_per_gram, ferment.ratio);
 
             ratios.push(ferment.ratio);
         }
@@ -65,7 +69,7 @@ impl super::AppModule for Yeast {
             .max()
             .unwrap_or(0);
 
-        if !self.ferments.is_empty() && check_ratios(ratios) {
+        if !self.ferments.is_empty() && math::check_ratios(ratios) {
             ui.colored_label(
                 ERROR_COLOR,
                 "Problème de ratios : leur somme doit être égal à 100",

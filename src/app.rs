@@ -62,14 +62,8 @@ struct WhirlpoolHop {
 #[serde(default)] // if we add new fields, give them default values when deserializing old state
 pub struct BrewingCalcApp {
     // #[serde(skip)] // This how you opt-out of serialization of a field
-    mash_water_ratio: f32,
-    evaporation_rate: f32,
     hops: Vec<Hop>,
     whirlpool_hops: Vec<WhirlpoolHop>,
-    mash_water_vol: f32,
-    post_mash_water_vol: f32,
-    sparge_water_vol: f32,
-    pre_ebullition_water_vol: f32,
     base: base::Base,
     bjcp_indexer: bjcp_style_index::BJCPStyleIndex,
     equilibrium_pressure: equilibrium_pressure::EquilibriumPressure,
@@ -82,14 +76,8 @@ pub struct BrewingCalcApp {
 impl Default for BrewingCalcApp {
     fn default() -> Self {
         Self {
-            mash_water_ratio: 3.0,
-            evaporation_rate: 10.0,
             hops: vec![],
             whirlpool_hops: vec![],
-            mash_water_vol: 0.0,
-            post_mash_water_vol: 0.0,
-            pre_ebullition_water_vol: 0.0,
-            sparge_water_vol: 0.0,
             base: base::Base::new(),
             bjcp_indexer: bjcp_style_index::BJCPStyleIndex::new(bjcp_style_index::parse_json()),
             equilibrium_pressure: equilibrium_pressure::EquilibriumPressure::new(),
@@ -166,10 +154,7 @@ impl App for BrewingCalcApp {
                 ui.add_space(DEFAULT_SPACING);
 
                 self.base.ebc = self.fermentecibles.ebc;
-                self.base.final_gravity = math::compute_final_gravity(
-                    self.base.original_gravity,
-                    self.yeast.max_attenuation as f32,
-                );
+                self.base.yeast_attenuation = self.yeast.max_attenuation;
 
                 self.base.show(ui);
 
@@ -182,9 +167,8 @@ impl App for BrewingCalcApp {
 
                 ui.add_space(DEFAULT_SPACING);
 
-                self.yeast.cell_count =
-                    math::compute_cell_count(self.base.original_gravity, self.base.batch_size)
-                        as u64;
+                self.yeast.original_gravity = self.base.original_gravity;
+                self.yeast.batch_size = self.base.batch_size;
 
                 self.yeast.show(ui);
 

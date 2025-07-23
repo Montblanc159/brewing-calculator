@@ -16,6 +16,7 @@ pub struct Base {
     pub final_gravity: f32,
     pub efficiency: u8,
     pub batch_size: u16,
+    pub yeast_attenuation: u8,
 }
 
 impl super::AppModule for Base {
@@ -30,6 +31,8 @@ impl super::AppModule for Base {
     }
 
     fn show(&mut self, ui: &mut Ui) {
+        self.final_gravity =
+            math::compute_final_gravity(self.original_gravity, self.yeast_attenuation as f32);
         self.abv = math::compute_abv(self.original_gravity, self.final_gravity);
 
         ui.horizontal(|ui| {
