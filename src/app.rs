@@ -9,6 +9,7 @@ use modules::fermentecibles;
 use modules::math;
 use modules::temperature_after_mix;
 use modules::ui_defaults::*;
+use modules::water;
 use modules::yeast;
 use serde::*;
 
@@ -75,6 +76,7 @@ pub struct BrewingCalcApp {
     temperature_after_mix: temperature_after_mix::TemperatureAfterMix,
     yeast: yeast::Yeast,
     fermentecibles: fermentecibles::Fermentecibles,
+    water: water::Water,
 }
 
 impl Default for BrewingCalcApp {
@@ -94,6 +96,7 @@ impl Default for BrewingCalcApp {
             temperature_after_mix: temperature_after_mix::TemperatureAfterMix::new(),
             yeast: yeast::Yeast::new(),
             fermentecibles: fermentecibles::Fermentecibles::new(),
+            water: water::Water::new(),
         }
     }
 }
@@ -163,57 +166,20 @@ impl App for BrewingCalcApp {
                 ui.add_space(DEFAULT_SPACING);
 
                 self.base.ebc = self.fermentecibles.ebc;
+                self.base.final_gravity = math::compute_final_gravity(
+                    self.base.original_gravity,
+                    self.yeast.max_attenuation as f32,
+                );
+
                 self.base.show(ui);
 
                 ui.add_space(DEFAULT_SPACING);
-                ui.heading("Eau");
-                ui.add_space(DEFAULT_SPACING);
 
-                egui::Frame::new()
-                    .fill(LIGHTER_COLOR)
-                    .inner_margin(DEFAULT_PADDING)
-                    .corner_radius(DEFAULT_CORNER_RADIUS)
-                    .show(ui, |ui| {
-                        ui.horizontal(|ui| {
-                            ui.label("Ratio d'eau à l'empâtage (L/kg): ");
-                            ui.add(Slider::new(&mut self.mash_water_ratio, 0.0..=10.0));
-                        });
+                self.water.batch_size = self.base.batch_size;
+                self.water.grain_weight = self.fermentecibles.total_weight;
 
-                        ui.add_space(DEFAULT_SPACING);
+                self.water.show(ui);
 
-                        ui.horizontal(|ui| {
-                            ui.label("Taux d'évaporation (%): ");
-                            ui.add(Slider::new(&mut self.evaporation_rate, 0.0..=10.0));
-                        });
-
-                        ui.add_space(DEFAULT_SPACING);
-
-                        ui.label(format!(
-                            "Volume d'eau à l'empatage (L): {:.3}",
-                            self.mash_water_vol
-                        ));
-
-                        ui.add_space(DEFAULT_SPACING);
-
-                        ui.label(format!(
-                            "Volume d'eau de rinçage (L): {:.3}",
-                            self.sparge_water_vol
-                        ));
-
-                        ui.add_space(DEFAULT_SPACING);
-
-                        ui.label(format!(
-                            "Volume d'eau pré-ébullition (L): {:.3}",
-                            self.pre_ebullition_water_vol
-                        ));
-
-                        ui.add_space(DEFAULT_SPACING);
-
-                        ui.horizontal(|ui| {
-                            ui.label("Volume (L): ");
-                            ui.add(Slider::new(&mut self.base.batch_size, 0..=30000));
-                        });
-                    });
                 ui.add_space(DEFAULT_SPACING);
 
                 self.yeast.cell_count =
@@ -222,37 +188,11 @@ impl App for BrewingCalcApp {
 
                 self.yeast.show(ui);
 
-                self.base.final_gravity = math::compute_final_gravity(
-                    self.base.original_gravity,
-                    self.yeast.max_attenuation as f32,
-                );
-
                 self.fermentecibles.batch_size = self.base.batch_size;
                 self.fermentecibles.original_gravity = self.base.original_gravity;
                 self.fermentecibles.efficiency = self.base.efficiency;
 
                 self.fermentecibles.show(ui);
-
-                self.mash_water_vol = math::compute_mash_water_vol(
-                    self.fermentecibles.total_weight,
-                    self.mash_water_ratio,
-                );
-
-                self.post_mash_water_vol = math::compute_post_mash_water_vol(
-                    self.mash_water_vol,
-                    self.fermentecibles.total_weight,
-                );
-
-                self.sparge_water_vol = math::compute_sparge_water_vol(
-                    self.base.batch_size,
-                    self.evaporation_rate,
-                    self.post_mash_water_vol,
-                );
-
-                self.pre_ebullition_water_vol = math::compute_pre_ebullition_water_vol(
-                    self.sparge_water_vol,
-                    self.post_mash_water_vol,
-                );
 
                 ui.add_space(DEFAULT_SPACING);
 

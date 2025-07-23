@@ -7,6 +7,7 @@ pub mod fermentecibles;
 pub mod math;
 pub mod temperature_after_mix;
 pub mod ui_defaults;
+pub mod water;
 pub mod yeast;
 
 pub trait AppModule {
