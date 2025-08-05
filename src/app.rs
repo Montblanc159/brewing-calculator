@@ -13,6 +13,7 @@ use modules::water;
 use modules::yeast;
 use serde::*;
 
+use crate::app::modules::ingredients_index;
 use crate::app::modules::AppModule;
 
 #[derive(Deserialize, Serialize, Default)]
@@ -64,6 +65,7 @@ pub struct BrewingCalcApp {
     // #[serde(skip)] // This how you opt-out of serialization of a field
     base: base::Base,
     bjcp_indexer: bjcp_style_index::BJCPStyleIndex,
+    ingredients_indexer: ingredients_index::IngredientsIndex,
     equilibrium_pressure: equilibrium_pressure::EquilibriumPressure,
     temperature_after_mix: temperature_after_mix::TemperatureAfterMix,
     yeast: yeast::Yeast,
@@ -77,6 +79,7 @@ impl Default for BrewingCalcApp {
         Self {
             base: base::Base::new(),
             bjcp_indexer: bjcp_style_index::BJCPStyleIndex::new(bjcp_style_index::parse_json()),
+            ingredients_indexer: ingredients_index::IngredientsIndex::new(),
             equilibrium_pressure: equilibrium_pressure::EquilibriumPressure::new(),
             temperature_after_mix: temperature_after_mix::TemperatureAfterMix::new(),
             yeast: yeast::Yeast::new(),
@@ -139,6 +142,7 @@ impl App for BrewingCalcApp {
 
             self.equilibrium_pressure.show(ui);
             self.temperature_after_mix.show(ui);
+            self.ingredients_indexer.show(ui)
         });
 
         // Add a lot of widgets here.
