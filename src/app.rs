@@ -6,48 +6,6 @@ use modules::ui_defaults::*;
 use modules::*;
 use serde::*;
 
-#[derive(Deserialize, Serialize, Default)]
-struct Fermentecible {
-    name: String,
-    extract: f32,
-    humidity: f32,
-    ebc: u8,
-    ratio: u8,
-    weight: f32,
-    mcu: f32,
-}
-
-#[derive(Deserialize, Serialize, Default)]
-struct Ferment {
-    name: String,
-    attenuation: u8,
-    pitch_rate: f32,
-    cells_per_gram: u32,
-}
-
-#[derive(Deserialize, Serialize, Default)]
-struct Hop {
-    name: String,
-    alpha_acids: f32,
-    addition_time: u8,
-    utilization: f32,
-    weight: f32,
-    ibu: f32,
-    ratio: u8,
-    addition_temp: f32,
-}
-
-#[derive(Deserialize, Serialize, Default)]
-struct WhirlpoolHop {
-    name: String,
-    alpha_acids: f32,
-    addition_time: u8,
-    weight: f32,
-    utilization: f32,
-    ibu: f32,
-    addition_temp: f32,
-}
-
 /// We derive Deserialize/Serialize so we can persist app state on shutdown.
 #[derive(Deserialize, Serialize)]
 #[serde(default)] // if we add new fields, give them default values when deserializing old state
