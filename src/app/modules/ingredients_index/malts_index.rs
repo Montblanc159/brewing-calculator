@@ -77,58 +77,55 @@ impl MaltsIndex {
                                         ui.add_space(DEFAULT_SPACING);
 
                                         if let Some(maltster) = &malt.maltster {
-                                            ui.label(format!("Maltster: {}", maltster));
+                                            ui.label(format!("Maltster: {maltster}"));
                                         };
 
                                         ui.add_space(DEFAULT_SPACING);
 
                                         if let Some(ratio) = &malt.ratio {
-                                            ui.label(format!("Ratio: {}", ratio));
+                                            ui.label(format!("Ratio: {ratio}"));
                                         };
 
                                         ui.add_space(DEFAULT_SPACING);
 
                                         if let Some(grain_yield) = &malt.grain_yield {
-                                            ui.label(format!("Grain yield: {}", grain_yield));
+                                            ui.label(format!("Grain yield: {grain_yield}"));
                                         };
 
                                         ui.add_space(DEFAULT_SPACING);
 
                                         if let Some(moisture) = &malt.moisture {
-                                            ui.label(format!("Moisture: {}", moisture));
+                                            ui.label(format!("Moisture: {moisture}"));
                                         };
 
                                         ui.add_space(DEFAULT_SPACING);
 
                                         if let Some(diastatic_power) = &malt.diastatic_power {
-                                            ui.label(format!(
-                                                "Diastatic power: {}",
-                                                diastatic_power
-                                            ));
+                                            ui.label(format!("Diastatic power: {diastatic_power}"));
                                         };
 
                                         ui.add_space(DEFAULT_SPACING);
 
                                         if let Some(kolbach_index) = &malt.kolbach_index {
-                                            ui.label(format!("Kolbach index: {}", kolbach_index));
+                                            ui.label(format!("Kolbach index: {kolbach_index}"));
                                         };
 
                                         ui.add_space(DEFAULT_SPACING);
 
                                         if let Some(total_nitrogen) = &malt.total_nitrogen {
-                                            ui.label(format!("Total nitrogen: {}", total_nitrogen));
+                                            ui.label(format!("Total nitrogen: {total_nitrogen}"));
                                         };
 
                                         ui.add_space(DEFAULT_SPACING);
 
                                         if let Some(total_protein) = &malt.total_protein {
-                                            ui.label(format!("Total protein: {}", total_protein));
+                                            ui.label(format!("Total protein: {total_protein}"));
                                         };
 
                                         ui.add_space(DEFAULT_SPACING);
 
                                         if let Some(snr) = &malt.snr {
-                                            ui.label(format!("SNR: {}", snr));
+                                            ui.label(format!("SNR: {snr}"));
                                         };
 
                                         ui.add_space(DEFAULT_SPACING);
@@ -137,13 +134,13 @@ impl MaltsIndex {
                                             ui.label("EBC");
 
                                             if let Some(ebc_min) = &malt.ebc_min {
-                                                ui.label(format!("{}", ebc_min));
+                                                ui.label(format!("{ebc_min}"));
                                             };
 
                                             ui.label("-");
 
                                             if let Some(ebc_max) = &malt.ebc_max {
-                                                ui.label(format!("{}", ebc_max));
+                                                ui.label(format!("{ebc_max}"));
                                             };
                                         });
                                     });

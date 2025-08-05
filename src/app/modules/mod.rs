@@ -1,6 +1,5 @@
 use egui::Ui;
 use serde::{Deserialize, Serialize};
-use serde_json;
 
 #[cfg(not(target_arch = "wasm32"))]
 use std::fs;

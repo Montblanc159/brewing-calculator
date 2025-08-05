@@ -79,19 +79,19 @@ impl HopsIndex {
                                         ui.add_space(DEFAULT_SPACING);
 
                                         if let Some(brewing_usage) = &hop.brewing_usage {
-                                            ui.label(format!("Brewing usage: {}", brewing_usage));
+                                            ui.label(format!("Brewing usage: {brewing_usage}"));
                                         };
 
                                         ui.add_space(DEFAULT_SPACING);
 
                                         if let Some(aroma) = &hop.aroma {
-                                            ui.label(format!("Aroma: {}", aroma));
+                                            ui.label(format!("Aroma: {aroma}"));
                                         };
 
                                         ui.add_space(DEFAULT_SPACING);
 
                                         if let Some(pedigree) = &hop.pedigree {
-                                            ui.label(format!("Pedigree: {}", pedigree));
+                                            ui.label(format!("Pedigree: {pedigree}"));
                                         };
 
                                         ui.add_space(DEFAULT_SPACING);
@@ -100,13 +100,13 @@ impl HopsIndex {
                                             ui.label("Alpha");
 
                                             if let Some(alpha_min) = &hop.alpha_min {
-                                                ui.label(format!("{}", alpha_min));
+                                                ui.label(format!("{alpha_min}"));
                                             };
 
                                             ui.label("-");
 
                                             if let Some(alpha_max) = &hop.alpha_max {
-                                                ui.label(format!("{}", alpha_max));
+                                                ui.label(format!("{alpha_max}"));
                                             };
                                         });
 
@@ -116,13 +116,13 @@ impl HopsIndex {
                                             ui.label("Beta");
 
                                             if let Some(beta_min) = &hop.beta_min {
-                                                ui.label(format!("{}", beta_min));
+                                                ui.label(format!("{beta_min}"));
                                             };
 
                                             ui.label("-");
 
                                             if let Some(beta_max) = &hop.beta_max {
-                                                ui.label(format!("{}", beta_max));
+                                                ui.label(format!("{beta_max}"));
                                             };
                                         });
 
@@ -132,13 +132,13 @@ impl HopsIndex {
                                             ui.label("Cohumulone");
 
                                             if let Some(cohumulone_min) = &hop.cohumulone_min {
-                                                ui.label(format!("{}", cohumulone_min));
+                                                ui.label(format!("{cohumulone_min}"));
                                             };
 
                                             ui.label("-");
 
                                             if let Some(cohumulone_max) = &hop.cohumulone_max {
-                                                ui.label(format!("{}", cohumulone_max));
+                                                ui.label(format!("{cohumulone_max}"));
                                             };
                                         });
 
@@ -148,26 +148,26 @@ impl HopsIndex {
                                             ui.label("Total oil");
 
                                             if let Some(total_oil_min) = &hop.total_oil_min {
-                                                ui.label(format!("{}", total_oil_min));
+                                                ui.label(format!("{total_oil_min}"));
                                             };
 
                                             ui.label("-");
 
                                             if let Some(total_oil_max) = &hop.total_oil_max {
-                                                ui.label(format!("{}", total_oil_max));
+                                                ui.label(format!("{total_oil_max}"));
                                             };
                                         });
 
                                         ui.add_space(DEFAULT_SPACING);
 
                                         if let Some(styles) = &hop.styles {
-                                            ui.label(format!("Styles: {}", styles));
+                                            ui.label(format!("Styles: {styles}"));
                                         };
 
                                         ui.add_space(DEFAULT_SPACING);
 
                                         if let Some(trade) = &hop.trade {
-                                            ui.label(format!("Trade: {}", trade));
+                                            ui.label(format!("Trade: {trade}"));
                                         };
                                     });
                                 });

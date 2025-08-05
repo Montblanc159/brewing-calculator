@@ -75,22 +75,21 @@ impl YeastsIndex {
                                         ui.add_space(DEFAULT_SPACING);
 
                                         if let Some(styles) = &yeast.styles {
-                                            ui.label(format!("Styles: {}", styles));
+                                            ui.label(format!("Styles: {styles}"));
                                         };
 
                                         ui.add_space(DEFAULT_SPACING);
 
                                         if let Some(alcohol_tolerance) = &yeast.alcohol_tolerance {
                                             ui.label(format!(
-                                                "Alcohol tolerance: {}",
-                                                alcohol_tolerance
+                                                "Alcohol tolerance: {alcohol_tolerance}"
                                             ));
                                         };
 
                                         ui.add_space(DEFAULT_SPACING);
 
                                         if let Some(flocculation) = &yeast.flocculation {
-                                            ui.label(format!("Flocculation: {}", flocculation));
+                                            ui.label(format!("Flocculation: {flocculation}"));
                                         };
 
                                         ui.add_space(DEFAULT_SPACING);
@@ -99,13 +98,13 @@ impl YeastsIndex {
                                             ui.label("Attenuation");
 
                                             if let Some(attenuation_min) = &yeast.attenuation_min {
-                                                ui.label(format!("{}", attenuation_min));
+                                                ui.label(format!("{attenuation_min}"));
                                             };
 
                                             ui.label("-");
 
                                             if let Some(attenuation_max) = &yeast.attenuation_max {
-                                                ui.label(format!("{}", attenuation_max));
+                                                ui.label(format!("{attenuation_max}"));
                                             };
                                         });
 
@@ -113,26 +112,26 @@ impl YeastsIndex {
                                             ui.label("Temperature");
 
                                             if let Some(temp_min) = &yeast.temp_min {
-                                                ui.label(format!("{}", temp_min));
+                                                ui.label(format!("{temp_min}"));
                                             };
 
                                             ui.label("-");
 
                                             if let Some(temp_max) = &yeast.temp_max {
-                                                ui.label(format!("{}", temp_max));
+                                                ui.label(format!("{temp_max}"));
                                             };
                                         });
 
                                         ui.add_space(DEFAULT_SPACING);
 
                                         if let Some(lab) = &yeast.lab {
-                                            ui.label(format!("Lab: {}", lab));
+                                            ui.label(format!("Lab: {lab}"));
                                         };
 
                                         ui.add_space(DEFAULT_SPACING);
 
                                         if let Some(form) = &yeast.form {
-                                            ui.label(format!("Form: {}", form));
+                                            ui.label(format!("Form: {form}"));
                                         };
                                     });
                                 });
