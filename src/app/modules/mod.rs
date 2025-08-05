@@ -25,7 +25,7 @@ pub trait AppModule {
 
 #[cfg(not(target_arch = "wasm32"))]
 #[derive(Default)]
-struct JsonParser<T> {
+pub struct JsonParser<T> {
     path: &'static str,
     _owns_t: marker::PhantomData<T>,
 }
@@ -35,14 +35,14 @@ impl<T> JsonParser<T>
 where
     T: for<'a> Deserialize<'a> + Serialize + Default,
 {
-    fn new(path: &'static str) -> Self {
+    pub fn new(path: &'static str) -> Self {
         Self {
             path,
             ..Default::default()
         }
     }
 
-    fn parse_json(&self) -> Vec<T> {
+    pub fn parse_json(&self) -> Vec<T> {
         // Use a `match` block to return the
         // file `contents` as a `Data struct: Ok(d)`
         // or handle any `errors: Err(_)`.
@@ -75,7 +75,7 @@ where
 
 #[cfg(target_arch = "wasm32")]
 #[derive(Default)]
-struct WasmJsonParser<T> {
+pub struct WasmJsonParser<T> {
     file: String,
     _owns_t: marker::PhantomData<T>,
 }
@@ -86,14 +86,14 @@ impl<T> WasmJsonParser<T>
 where
     T: for<'a> Deserialize<'a> + Serialize + Default,
 {
-    fn new(file: String) -> Self {
+    pub fn new(file: String) -> Self {
         Self {
             file,
             ..Default::default()
         }
     }
 
-    fn parse_json(&self) -> Vec<T> {
+    pub fn parse_json(&self) -> Vec<T> {
         // Use a `match` block to return the
         // file `contents` as a `Data struct: Ok(d)`
         // or handle any `errors: Err(_)`.

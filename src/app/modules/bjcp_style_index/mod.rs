@@ -4,27 +4,23 @@ use crate::app::modules::ui_defaults::*;
 use eframe::*;
 use egui::*;
 use serde::{Deserialize, Serialize};
-use serde_json;
 
 #[cfg(not(target_arch = "wasm32"))]
-use std::fs;
-use std::process::exit;
+pub const JSON_PATH: &str = "src/app/modules/bjcp_style_index/assets/beer_styles.json";
+
+#[cfg(target_arch = "wasm32")]
+pub const JSON_FILE: &[u8; 395720] = include_bytes!("assets/beer_styles.json");
 
 #[derive(Deserialize, Serialize)]
 #[serde(default)]
 pub struct BJCPStyleIndex {
-    beer_styles: BeerStyles,
+    beer_styles: Vec<BeerStyle>,
     prompt: String,
     result: Vec<BeerStyle>,
 }
 
-#[derive(Deserialize, Serialize, Clone)]
-pub struct BeerStyles {
-    styles: Vec<BeerStyle>,
-}
-
-#[derive(Deserialize, Serialize, Clone)]
-struct BeerStyle {
+#[derive(Deserialize, Serialize, Default, Clone)]
+pub struct BeerStyle {
     name: String,
     number: Option<String>,
     category: Option<String>,
@@ -53,13 +49,14 @@ struct BeerStyle {
     srmmax: Option<String>,
     commercialexamples: Option<String>,
     tags: Option<String>,
+    #[serde(skip)]
     opened: bool,
 }
 
 impl Default for BJCPStyleIndex {
     fn default() -> Self {
         Self {
-            beer_styles: BeerStyles { styles: vec![] },
+            beer_styles: vec![],
             prompt: "".into(),
             result: vec![],
         }
@@ -67,7 +64,12 @@ impl Default for BJCPStyleIndex {
 }
 
 impl BJCPStyleIndex {
-    pub fn new(beer_styles: BeerStyles) -> Self {
+    #[cfg(target_arch = "wasm32")]
+    pub fn parse_file() -> String {
+        String::from_utf8_lossy(&JSON_FILE[..]).to_string()
+    }
+
+    pub fn new(beer_styles: Vec<BeerStyle>) -> Self {
         Self {
             beer_styles,
             ..Default::default()
@@ -79,7 +81,7 @@ impl BJCPStyleIndex {
             ui.label("Recherche par style (eng)");
 
             if ui.text_edit_singleline(&mut self.prompt).changed() {
-                self.result = search_styles(&self.prompt, &self.beer_styles.styles)
+                self.result = search_styles(&self.prompt, &self.beer_styles)
             };
 
             ui.add_space(DEFAULT_SPACING);
@@ -96,11 +98,11 @@ impl BJCPStyleIndex {
                         }
                     }
                 } else {
-                    for style in &mut self.beer_styles.styles {
+                    for style in &mut self.beer_styles {
                         style_ui(style, ui.ctx());
                     }
 
-                    for style in self.beer_styles.styles.iter_mut() {
+                    for style in self.beer_styles.iter_mut() {
                         if ui.button(&style.name).clicked() {
                             style.opened = !style.opened;
                         }
@@ -295,52 +297,4 @@ fn style_ui(style: &mut BeerStyle, ctx: &Context) {
                 };
             });
         });
-}
-
-pub fn parse_json() -> BeerStyles {
-    // Use a `match` block to return the
-    // file `contents` as a `Data struct: Ok(d)`
-    // or handle any `errors: Err(_)`.
-    let data: BeerStyles = match serde_json::from_str(&fetch_json()) {
-        // If successful, return data as `Data` struct.
-        // `d` is a local variable.
-        Ok(d) => d,
-        // Handle the `error` case.
-        Err(_) => {
-            // Write `msg` to `stderr`.
-            eprintln!("Unable to load data from `beer_styles.json`");
-            // Exit the program with exit code `1`.
-            exit(1);
-        }
-    };
-
-    data
-}
-
-#[cfg(not(target_arch = "wasm32"))]
-pub fn fetch_json() -> String {
-    // Variable that holds the filename as a `&str`.
-    let filename = "src/app/modules/bjcp_style_index/assets/beer_styles.json";
-
-    // Read the contents of the file using a `match` block
-    // to return the `data: Ok(c)` as a `String`
-    // or handle any `errors: Err(_)`.
-    match fs::read_to_string(filename) {
-        // If successful return the files text as `contents`.
-        // `c` is a local variable.
-        Ok(c) => c,
-        // Handle the `error` case.
-        Err(e) => {
-            // Write `msg` to `stderr`.
-            eprintln!("Could not read file `{filename}`: {e}");
-            // Exit the program with exit code `1`.
-            exit(1);
-        }
-    }
-}
-
-// When compiling to web using trunk:
-#[cfg(target_arch = "wasm32")]
-pub fn fetch_json() -> String {
-    String::from_utf8_lossy(&include_bytes!("assets/beer_styles.json")[..]).to_string()
 }

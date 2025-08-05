@@ -2,19 +2,9 @@ mod modules;
 
 use eframe::*;
 use egui::*;
-use modules::base;
-use modules::bjcp_style_index;
-use modules::equilibrium_pressure;
-use modules::fermentecibles;
-use modules::hops;
-use modules::temperature_after_mix;
 use modules::ui_defaults::*;
-use modules::water;
-use modules::yeast;
+use modules::*;
 use serde::*;
-
-use crate::app::modules::ingredients_index;
-use crate::app::modules::AppModule;
 
 #[derive(Deserialize, Serialize, Default)]
 struct Fermentecible {
@@ -76,9 +66,20 @@ pub struct BrewingCalcApp {
 
 impl Default for BrewingCalcApp {
     fn default() -> Self {
+        #[cfg(not(target_arch = "wasm32"))]
+        let beer_styles =
+            modules::JsonParser::<bjcp_style_index::BeerStyle>::new(bjcp_style_index::JSON_PATH)
+                .parse_json();
+
+        #[cfg(target_arch = "wasm32")]
+        let beer_styles = modules::WasmJsonParser::<bjcp_style_index::BeerStyle>::new(
+            bjcp_style_index::BJCPStyleIndex::parse_file(),
+        )
+        .parse_json();
+
         Self {
             base: base::Base::new(),
-            bjcp_indexer: bjcp_style_index::BJCPStyleIndex::new(bjcp_style_index::parse_json()),
+            bjcp_indexer: bjcp_style_index::BJCPStyleIndex::new(beer_styles),
             ingredients_indexer: ingredients_index::IngredientsIndex::new(),
             equilibrium_pressure: equilibrium_pressure::EquilibriumPressure::new(),
             temperature_after_mix: temperature_after_mix::TemperatureAfterMix::new(),
